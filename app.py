@@ -58,6 +58,12 @@ Você é um sistema de apoio jurídico que analisa recursos administrativos de p
 2. Identifique quais argumentos da defesa correspondem aos seguintes códigos e descrições:
 {ARG_MAP}
 
+⚠️ Importante: trate como equivalente a **Argumento 2** qualquer menção a:
+- "filho em comum"
+- "descendência em comum"
+- "filha em comum"
+- "descendência conjunta"
+
 3. Se existirem argumentos adicionais que não se enquadram nos 11 códigos, liste-os em "outros".
 
 ### Formato de saída
@@ -129,17 +135,17 @@ def analisar_com_matriz(achado, argumentos):
 
 # ------------------ INTERFACE ------------------
 
-st.title("📑 Analisador de Recursos - Filha Maior Solteira (com GPT)")
+st.title("📑 Analisador de Recursos - Filha Maior Solteira")
 
 extrato_file = st.file_uploader("Upload do PDF do Extrato (TCU)", type=["pdf"])
-defesa_file = st.file_uploader("Upload do PDF da Defesa", type=["pdf"])
+defesa_file = st.file_uploader("Upload do PDF do Recurso", type=["pdf"])
 
 if extrato_file and defesa_file:
     texto_extrato = extrair_texto(extrato_file)
     texto_defesa = extrair_texto(defesa_file)
 
     # --- 1. JSON técnico ---
-    st.info("🔎 Chamando GPT para classificar (JSON técnico)...")
+    st.info("🔎 Analisando documentos...")
     saida_gpt = classificar_com_gpt(texto_extrato, texto_defesa)
 
     try:
@@ -158,9 +164,9 @@ if extrato_file and defesa_file:
 
     s1, s2 = analisar_com_matriz(achado, argumentos)
 
-    st.subheader("✅ Resultado técnico")
+    st.subheader("✅ Achado TCU")
     st.markdown(f"**Achado:** {achado}")
-    st.markdown(f"**Saída 1:** {s1}")
+    st.markdown(f"**Decisão sugerida:** {s1}")
     st.text(s2)
 
     st.subheader("📚 Argumentos detectados (numéricos)")
@@ -169,11 +175,26 @@ if extrato_file and defesa_file:
             st.write(f"{a} — {ARG_MAP[a]}")
     else:
         st.warning("Nenhum argumento numerado detectado.")
+
+    # --- Outros argumentos não mapeados ---
     if outros:
         st.info(f"⚠️ Outros argumentos não mapeados: {', '.join(outros)}")
 
+        # Sugestão automática de resposta
+        sugestao = []
+        if any("boa-fé" in o.lower() or "segurança jurídica" in o.lower() for o in outros):
+            sugestao.append(
+                "A invocação de boa-fé e segurança jurídica não descaracteriza o achado. "
+                "O TCU entende que a manutenção do benefício depende da ausência de união estável, "
+                "independentemente da confiança legítima ou da boa-fé alegada."
+            )
+        if sugestao:
+            st.subheader("💡 Sugestão de resposta")
+            for s in sugestao:
+                st.write(s)
+
     # --- 2. Narrativa formatada ---
-    st.info("📝 Chamando GPT para gerar narrativa formatada...")
+    st.info("📝 Levantando trechos relevantes do recurso...")
     saida_formatada = extrair_argumentos_formatado(texto_defesa)
 
     st.subheader("📑 Recurso apresentado (trechos relevantes)")
