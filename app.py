@@ -426,6 +426,17 @@ Outro argumento não numerado
 # --------- Aplicar matriz ---------
 def analisar_com_matriz(achado, argumentos):
     improc, proc = [], []
+
+    # Se não há argumentos, buscar regra "Nenhum argumento apresentado"
+    if not argumentos or len(argumentos) == 0:
+        regra = matriz[(matriz["achado"] == achado) & (matriz["argumento"] == "Nenhum argumento apresentado")]
+        if not regra.empty:
+            res = regra["resultado"].iloc[0]
+            saida1 = res
+            saida2 = f"Decisão baseada em: {achado} + Nenhum argumento apresentado = {res}"
+            return saida1, saida2
+
+    # Se há argumentos, processar normalmente
     for num in argumentos:
         arg_texto = ARG_MAP.get(num, num)
         regra = matriz[(matriz["achado"] == achado) & (matriz["argumento"] == arg_texto)]
