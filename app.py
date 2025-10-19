@@ -487,19 +487,19 @@ Gere a Nota Técnica completa no formato SEI, conforme {'item 15' if decisao == 
 1. Parágrafo introdutório: "Dos argumentos apresentados no recurso pela Interessada, segue análise:"
 
 2-N. Para CADA argumento/alegação, escrever UM parágrafo no seguinte estilo:
-   **Formato:** "A Interessada alega que [resumo do argumento]. Análise: [fundamentação jurídica]. Conclusão: [por que {'não afasta o achado' if decisao == 'improcedente' else 'comprova a inexistência de união estável'}]."
+   **Formato:** "A Interessada alega que [resumo do argumento]. Análise: [fundamentação jurídica]. Conclusão: [conclusão sobre o argumento]."
 
-   **Exemplo de parágrafo:**
-   "A Interessada alega que nunca manteve união estável com o suposto companheiro. Análise: A condição de solteira no registro civil é um dos elementos que compõem a análise da situação de dependência econômica e familiar. A legislação pertinente, especialmente a Lei 3.373/1958, estabelece que a dependência econômica deve ser analisada em conjunto com outros fatores, como a convivência e a constituição de família. O art. 1.723 do Código Civil define união estável como convivência pública, contínua e duradoura, estabelecida com o objetivo de constituição de família. Conclusão: A mera condição de solteira não impede a configuração de união estável, pois é a existência de filho em comum que indique os deveres de sustento e educação dos filhos no âmbito da união estável."
+   **{'EXEMPLO - RECURSO IMPROCEDENTE' if decisao == 'improcedente' else 'EXEMPLO - RECURSO PROCEDENTE'}:**
+   {'A Interessada alega que nunca manteve união estável com o suposto companheiro. Análise: A condição de solteira no registro civil é um dos elementos que compõem a análise da situação de dependência econômica e familiar. A legislação pertinente, especialmente a Lei 3.373/1958, estabelece que a dependência econômica deve ser analisada em conjunto com outros fatores, como a convivência e a constituição de família. O art. 1.723 do Código Civil define união estável como convivência pública, contínua e duradoura, estabelecida com o objetivo de constituição de família. Conclusão: A mera condição de solteira não impede a configuração de união estável, pois é a existência de filho em comum que indica os deveres de sustento e educação dos filhos no âmbito da união estável, não sendo suficiente para afastar o achado do TCU.' if decisao == 'improcedente' else 'A Interessada alega que nunca manteve união estável com o suposto companheiro, apresentando certidão de casamento com terceiro no período. Análise: A Lei 3.373/1958 estabelece que a pensão é devida apenas à filha maior solteira sem meios de prover a própria subsistência, sendo incompatível com a condição de casada ou em união estável. A apresentação de certidão de casamento com terceiro contemporânea ao período analisado demonstra a impossibilidade de configuração de união estável simultânea. Conclusão: As provas documentais apresentadas comprovam que a Interessada não mantinha união estável, afastando o achado do TCU e demonstrando o direito à manutenção do benefício.'}
 
-N+1. Parágrafo final de conclusão: Fundamentar a decisão final ({decisao}) com base na análise dos argumentos
+N+1. Parágrafo final de conclusão: Fundamentar a decisão final ({decisao.upper()}) com base na análise dos argumentos
 
 **REGRAS IMPORTANTES:**
 - Use SEMPRE linguagem de Nota Técnica SEI: "A Interessada alega que...", "Conforme disposto...", "Assim..."
 - Numere os parágrafos (1., 2., 3., etc.)
 - Mantenha tom jurídico, técnico e objetivo
-- Cite legislação pertinente (Lei 3373/1958, Acórdãos do TCU 7972/2017-2ªC, Código Civil)
-- {'Se improcedente: explique que as alegações não são suficientes para afastar o achado do TCU' if decisao == 'improcedente' else 'Se procedente: explique como as alegações demonstram a inexistência de união estável'}
+- Cite legislação pertinente (Lei 3.373/1958, Acórdãos do TCU 7972/2017-2ªC, Código Civil)
+- **{'IMPROCEDENTE: Explique que as alegações NÃO são suficientes para AFASTAR o achado do TCU. A pensionista PERDE o benefício.' if decisao == 'improcedente' else 'PROCEDENTE: Explique que as alegações COMPROVAM a INEXISTÊNCIA de união estável. A pensionista MANTÉM o benefício.'}**
 - Seja completo e fundamentado
 - NÃO inclua cabeçalhos de seção, rodapés ou assinaturas
 """
