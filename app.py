@@ -10,20 +10,30 @@ from io import StringIO, BytesIO
 # carregar chave da API do secrets (Streamlit Cloud)
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# Configurar cliente B2 (compatível com S3)
-s3_client = boto3.client(
-    's3',
-    endpoint_url=st.secrets["B2_ENDPOINT"],
-    aws_access_key_id=st.secrets["B2_KEY_ID"],
-    aws_secret_access_key=st.secrets["B2_APPLICATION_KEY"]
-)
-
-BUCKET_NAME = st.secrets["B2_BUCKET_NAME"]
-FEEDBACK_FILE = "feedbacks.csv"
+# Configurar cliente B2 (compatível com S3) - com tratamento de erro
+try:
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=st.secrets.get("B2_ENDPOINT", "https://s3.us-east-005.backblazeb2.com"),
+        aws_access_key_id=st.secrets.get("B2_KEY_ID", ""),
+        aws_secret_access_key=st.secrets.get("B2_APPLICATION_KEY", "")
+    )
+    BUCKET_NAME = st.secrets.get("B2_BUCKET_NAME", "MapaGov")
+    FEEDBACK_FILE = "feedbacks.csv"
+    B2_CONFIGURED = True
+except Exception as e:
+    s3_client = None
+    BUCKET_NAME = None
+    FEEDBACK_FILE = "feedbacks.csv"
+    B2_CONFIGURED = False
+    st.warning("⚠️ Backblaze B2 não configurado. Configure os secrets B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY e B2_BUCKET_NAME.")
 
 # --------- Funções B2 ---------
 def download_feedbacks_from_b2():
     """Baixa o arquivo feedbacks.csv do Backblaze B2 e retorna como DataFrame."""
+    if not B2_CONFIGURED or s3_client is None:
+        return pd.DataFrame(columns=['timestamp', 'codigo', 'nome', 'decisao', 'achado', 'avaliacao', 'comentario', 'corpo_oficio'])
+
     try:
         response = s3_client.get_object(Bucket=BUCKET_NAME, Key=FEEDBACK_FILE)
         csv_content = response['Body'].read().decode('utf-8')
@@ -38,6 +48,10 @@ def download_feedbacks_from_b2():
 
 def upload_feedbacks_to_b2(df):
     """Faz upload do DataFrame de feedbacks para o Backblaze B2."""
+    if not B2_CONFIGURED or s3_client is None:
+        st.error("❌ Backblaze B2 não está configurado. Configure os secrets no Streamlit Cloud.")
+        return False
+
     try:
         csv_buffer = StringIO()
         df.to_csv(csv_buffer, index=False)
