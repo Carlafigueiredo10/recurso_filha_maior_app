@@ -201,6 +201,36 @@ def carregar_template_oficio(decisao):
 
     return extrair_texto(template_path)
 
+def extrair_item_template(decisao):
+    """Extrai apenas o item 13 (procedente) ou item 15 (improcedente) do template."""
+    template_completo = carregar_template_oficio(decisao)
+
+    if not template_completo:
+        return None
+
+    # Apenas para procedente (item 13)
+    if decisao == "procedente":
+        # Procurar pelo item 13
+        import re
+
+        # Tentar diferentes padrões para encontrar o item 13
+        padroes = [
+            r'(?:^|\n)\s*13[.\)]\s*(.+?)(?=\n\s*14[.\)]|\n\s*Respeitosamente|\Z)',
+            r'(?:^|\n)\s*item\s*13[.\):]?\s*(.+?)(?=\n\s*(?:item\s*)?14[.\)]|\n\s*Respeitosamente|\Z)',
+            r'13[.\)]\s*(.+?)(?=14[.\)]|\Z)'
+        ]
+
+        for padrao in padroes:
+            match = re.search(padrao, template_completo, re.IGNORECASE | re.DOTALL)
+            if match:
+                return match.group(1).strip()
+
+        # Se não encontrou, retorna uma parte do meio do documento
+        return template_completo[len(template_completo)//3:len(template_completo)*2//3]
+
+    # Para improcedente não mexe (já funciona)
+    return None
+
 # --------- Extrair dados de identificação do extrato ---------
 def extrair_dados_identificacao(texto_extrato):
     """Extrai nome, CPF, código e descrição do indício do extrato do TCU."""
@@ -427,7 +457,28 @@ def gerar_corpo_oficio(decisao, achado, argumentos, outros, alegacoes, texto_def
     cpf = dados_identificacao.get("cpf", "[CPF NÃO IDENTIFICADO]")
     codigo = dados_identificacao.get("codigo_indicio", "[CÓDIGO NÃO IDENTIFICADO]")
 
-    # Tentar carregar feedbacks para aprendizado
+    # Carregar template do ofício como referência (APENAS para procedente)
+    template_texto = ""
+    if decisao == "procedente":
+        try:
+            item13_conteudo = extrair_item_template("procedente")
+            if item13_conteudo:
+                template_texto = f"""
+
+### 📄 ITEM 13 DO TEMPLATE (PROCEDENTE) - SIGA ESTE MODELO
+O item 13 do template de ofício procedente mostra COMO escrever quando o recurso é PROCEDENTE:
+
+{item13_conteudo[:2000]}
+
+⚠️ **IMPORTANTE**: Use este item 13 como GUIA de estilo, tom, estrutura e argumentação.
+- Observe COMO ele justifica que os argumentos AFASTAM o achado do TCU
+- Observe COMO ele conclui pela MANUTENÇÃO do benefício
+- Adapte o conteúdo ao caso específico atual.
+"""
+        except:
+            pass  # Se não conseguir carregar template, continua sem
+
+    # Tentar carregar feedbacks para aprendizado adicional
     exemplos_aprendizado = ""
     try:
         df_feedbacks = download_feedbacks_from_b2()
@@ -443,13 +494,13 @@ def gerar_corpo_oficio(decisao, achado, argumentos, outros, alegacoes, texto_def
                 exemplo = corretos_similares.iloc[0]
                 exemplos_aprendizado = f"""
 
-### EXEMPLO DE ANÁLISE APROVADA (mesmo tipo de caso)
+### ✅ EXEMPLO DE ANÁLISE APROVADA (mesmo tipo de caso)
 **Achado:** {exemplo['achado']}
 **Decisão:** {exemplo['decisao']}
 **Texto aprovado:**
 {exemplo['corpo_oficio'][:800]}
 
-⚠️ Use este exemplo como REFERÊNCIA de qualidade e estilo, mas adapte ao caso atual.
+⚠️ Use este exemplo como REFERÊNCIA adicional de qualidade.
 """
     except:
         pass  # Se não conseguir carregar feedbacks, continua sem exemplos
@@ -477,6 +528,7 @@ Você é um especialista em redação de Notas Técnicas no formato SEI para an�
 
 ### ARGUMENTOS NÃO MAPEADOS
 {outros_lista}
+{template_texto}
 {exemplos_aprendizado}
 
 ### TAREFA
