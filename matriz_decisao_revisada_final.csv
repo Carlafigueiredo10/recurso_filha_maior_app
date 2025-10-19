@@ -17,14 +17,14 @@ Filho + endereço,Processo administrativo anterior sem novos elementos,procedent
 Filho + CadÚnico,Negativa de união estável,procedente
 Filho + CadÚnico,Testemunho de terceiros,procedente
 Filho + CadÚnico,Decisão judicial transitada em julgado,procedente
-Filho + CadÚnico,Erro cadastral comprovado,procedente
+Filho + CadÚnico,Erro cadastral comprovado,improcedente
 Mais de 1 filho,Negativa de união estável,improcedente
 Mais de 1 filho,Testemunho de terceiros,improcedente
 Mais de 1 filho,Decisão judicial transitada em julgado,procedente
 Mais de 1 filho,Ameaça de judicialização,improcedente
-Endereço em múltiplas bases (TSE/Receita),Negativa de união estável,improcedente
-Endereço em múltiplas bases (TSE/Receita),Prova documental robusta divergente,improcedente
-Endereço em múltiplas bases (TSE/Receita),Decisão judicial transitada em julgado,procedente
+Endereço em múltiplas bases,Negativa de união estável,improcedente
+Endereço em múltiplas bases,Prova documental robusta divergente,improcedente
+Endereço em múltiplas bases,Decisão judicial transitada em julgado,procedente
 Pensão do INSS como companheira,Nenhum argumento apresentado,improcedente
 Pensão do INSS como companheira,Negativa de união estável,improcedente
 Pensão do INSS como companheira,Decisão judicial transitada em julgado,procedente

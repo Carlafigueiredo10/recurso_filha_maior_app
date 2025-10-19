@@ -178,7 +178,8 @@ ARG_MAP = {
     "8": "Ameaça de judicialização",
     "9": "Recebimento de pensão do INSS não descaracteriza",
     "10": "Testemunhos de terceiros",
-    "11": "Inconsistência no CadÚnico"
+    "11": "Inconsistência no CadÚnico",
+    "12": "Defesa admite filho em comum"
 }
 
 # carregar matriz
@@ -315,10 +316,10 @@ Você é um sistema de apoio jurídico que analisa recursos administrativos de p
 REGRAS DE CLASSIFICAÇÃO:
 - "Apenas CadÚnico": quando menciona SOMENTE Cadastro Único Federal / CadÚnico / Bolsa Família como responsável financeira ou cônjuge/companheiro(a)
 - "Apenas 1 filho": quando menciona SOMENTE filho em comum (sem outras evidências)
-- "Filho + endereço": quando menciona filho em comum + endereço em comum (bases como TSE, Receita Federal)
+- "Filho + endereço": quando menciona filho em comum + endereço em comum (bases cadastrais)
 - "Filho + CadÚnico": quando menciona filho em comum + declaração no CadÚnico
 - "Mais de 1 filho": quando menciona 2 ou mais filhos em comum
-- "Endereço em múltiplas bases (TSE/Receita)": quando menciona endereço em comum em bases como TSE ou Receita Federal (sem filho)
+- "Endereço em múltiplas bases": quando menciona endereço em comum em 2+ bases cadastrais (TSE, Receita Federal, RENACH, CNIS, DENATRAN, etc.) sem mencionar filho
 - "Pensão do INSS como companheira": quando menciona recebimento de pensão por morte do companheiro no INSS
 - "Achado não classificado": quando não se encaixa em nenhuma das categorias acima
 
@@ -329,13 +330,20 @@ Escolha um dos seguintes rótulos:
 2. Identifique quais argumentos da defesa correspondem aos seguintes códigos e descrições:
 {ARG_MAP}
 
-⚠️ Importante: trate como equivalente a **Argumento 2** qualquer menção a:
-- "filho em comum"
-- "descendência em comum"
-- "filha em comum"
-- "descendência conjunta"
+⚠️ IMPORTANTE - Diferenciar CONFISSÃO vs NEGAÇÃO de filho:
+- **Argumento 2** ("Filho em comum não caracteriza"): quando a defesa ADMITE que existe filho, mas NEGA que isso caracteriza união estável
+- **Argumento 12** ("Defesa admite filho em comum"): quando a defesa simplesmente CONFIRMA/ADMITE ter filho SEM negar a união estável
 
-3. Se existirem argumentos adicionais que não se enquadram nos 11 códigos, liste-os em "outros".
+⚠️ Importante: trate como **Argumento 2** quando mencionar:
+- "filho em comum não significa união estável"
+- "mera existência de filho não caracteriza"
+- "filho não comprova união"
+
+⚠️ Importante: trate como **Argumento 12** quando:
+- Defesa confirma/admite filho SEM contestar união estável
+- Menciona filho mas não argumenta que isso é irrelevante
+
+3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
 
 ### Formato de saída
 Responda apenas com JSON válido, sem explicações, sem Markdown, no seguinte formato:
@@ -423,23 +431,52 @@ Outro argumento não numerado
     )
     return resp.choices[0].message.content
 
+# --------- Recalcular achado baseado na defesa ---------
+def recalcular_achado(achado_original, argumentos):
+    """
+    Recalcula o achado quando a defesa REVELA mais provas.
+    Se a defesa menciona filho/CadÚnico, isso é um FATO que aumenta as provas.
+    """
+    achado_atualizado = achado_original
+
+    # Se defesa menciona FILHO (Arg 2 ou 12), filho EXISTE como prova
+    menciona_filho = "2" in argumentos or "12" in argumentos or "3" in argumentos
+
+    # Regra 1: "Apenas CadÚnico" + defesa menciona filho → "Filho + CadÚnico"
+    if achado_original == "Apenas CadÚnico" and menciona_filho:
+        achado_atualizado = "Filho + CadÚnico"
+
+    # Regra 2: "Apenas 1 filho" + defesa menciona CadÚnico (Arg 11) → "Filho + CadÚnico"
+    elif achado_original == "Apenas 1 filho" and "11" in argumentos:
+        achado_atualizado = "Filho + CadÚnico"
+
+    # Regra 3: "Apenas 1 filho" + defesa menciona MAIS filhos (Arg 3) → "Mais de 1 filho"
+    elif achado_original == "Apenas 1 filho" and "3" in argumentos:
+        achado_atualizado = "Mais de 1 filho"
+
+    return achado_atualizado
+
 # --------- Aplicar matriz ---------
 def analisar_com_matriz(achado, argumentos):
+    # PRIMEIRO: Recalcular achado se defesa revelar mais provas
+    achado_recalculado = recalcular_achado(achado, argumentos)
+
     improc, proc = [], []
 
     # Se não há argumentos, buscar regra "Nenhum argumento apresentado"
     if not argumentos or len(argumentos) == 0:
-        regra = matriz[(matriz["achado"] == achado) & (matriz["argumento"] == "Nenhum argumento apresentado")]
+        regra = matriz[(matriz["achado"] == achado_recalculado) & (matriz["argumento"] == "Nenhum argumento apresentado")]
         if not regra.empty:
             res = regra["resultado"].iloc[0]
             saida1 = res
-            saida2 = f"Decisão baseada em: {achado} + Nenhum argumento apresentado = {res}"
+            mensagem_achado = f" (achado original: {achado})" if achado != achado_recalculado else ""
+            saida2 = f"Decisão baseada em: {achado_recalculado}{mensagem_achado} + Nenhum argumento apresentado = {res}"
             return saida1, saida2
 
     # Se há argumentos, processar normalmente
     for num in argumentos:
         arg_texto = ARG_MAP.get(num, num)
-        regra = matriz[(matriz["achado"] == achado) & (matriz["argumento"] == arg_texto)]
+        regra = matriz[(matriz["achado"] == achado_recalculado) & (matriz["argumento"] == arg_texto)]
         if regra.empty:
             regra = matriz[(matriz["achado"] == "Qualquer achado") & (matriz["argumento"] == arg_texto)]
         if not regra.empty:
@@ -452,7 +489,9 @@ def analisar_com_matriz(achado, argumentos):
     else:
         saida1 = "improcedente" if len(improc) >= len(proc) else "procedente"
 
-    saida2 = f"improcedente argumentos ({', '.join(improc)})\nprocedente argumentos ({', '.join(proc)})"
+    # Mensagem mostra se achado foi recalculado
+    info_recalculo = f"\n⚠️ Achado recalculado: {achado} → {achado_recalculado} (defesa revelou mais provas)" if achado != achado_recalculado else ""
+    saida2 = f"improcedente argumentos ({', '.join(improc)})\nprocedente argumentos ({', '.join(proc)}){info_recalculo}"
     return saida1, saida2
 
 # --------- Gerar corpo do ofício ---------
