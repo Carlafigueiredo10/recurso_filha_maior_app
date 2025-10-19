@@ -1,0 +1,5 @@
+# Ignorar os PDFs de template (podem conter informações sensíveis)
+*.pdf
+
+# Manter apenas o README
+!README.md
