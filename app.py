@@ -12,21 +12,24 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # Configurar cliente B2 (compatível com S3) - com tratamento de erro
 try:
-    s3_client = boto3.client(
-        's3',
-        endpoint_url=st.secrets.get("B2_ENDPOINT", "https://s3.us-east-005.backblazeb2.com"),
-        aws_access_key_id=st.secrets.get("B2_KEY_ID", ""),
-        aws_secret_access_key=st.secrets.get("B2_APPLICATION_KEY", "")
-    )
-    BUCKET_NAME = st.secrets.get("B2_BUCKET_NAME", "MapaGov")
-    FEEDBACK_FILE = "feedbacks.csv"
-    B2_CONFIGURED = True
+    # Verificar se as credenciais B2 existem
+    if all(key in st.secrets for key in ["B2_ENDPOINT", "B2_KEY_ID", "B2_APPLICATION_KEY", "B2_BUCKET_NAME"]):
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=st.secrets["B2_ENDPOINT"],
+            aws_access_key_id=st.secrets["B2_KEY_ID"],
+            aws_secret_access_key=st.secrets["B2_APPLICATION_KEY"]
+        )
+        BUCKET_NAME = st.secrets["B2_BUCKET_NAME"]
+        FEEDBACK_FILE = "feedbacks.csv"
+        B2_CONFIGURED = True
+    else:
+        raise KeyError("B2 secrets não configurados")
 except Exception as e:
     s3_client = None
     BUCKET_NAME = None
     FEEDBACK_FILE = "feedbacks.csv"
     B2_CONFIGURED = False
-    st.warning("⚠️ Backblaze B2 não configurado. Configure os secrets B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY e B2_BUCKET_NAME.")
 
 # --------- Funções B2 ---------
 def download_feedbacks_from_b2():
@@ -513,10 +516,24 @@ N+1. Parágrafo final de conclusão: Fundamentar a decisão final ({decisao}) co
 
 st.title("📑 Analisador de Recursos - Filha Maior Solteira")
 
+# Aviso se B2 não estiver configurado
+if not B2_CONFIGURED:
+    st.info("""
+    ℹ️ **Sistema de Feedbacks Desabilitado**
+
+    Para habilitar o sistema de aprendizado com feedbacks, configure as credenciais do Backblaze B2 nos Secrets:
+    - `B2_ENDPOINT` (exemplo: https://s3.us-east-005.backblazeb2.com)
+    - `B2_KEY_ID` (use o S3 Access Key ID, não Application Key ID)
+    - `B2_APPLICATION_KEY` (use o S3 Secret Key)
+    - `B2_BUCKET_NAME` (nome do seu bucket)
+
+    **Importante:** Use as credenciais S3-compatible, não as credenciais nativas do B2!
+    """)
+
 # Botão de processar feedbacks no topo
 col_titulo, col_feedback_btn = st.columns([3, 1])
 with col_feedback_btn:
-    if st.button("🧠 Processar Feedbacks", help="Analisa feedbacks do B2 e gera insights de aprendizado", type="secondary"):
+    if st.button("🧠 Processar Feedbacks", help="Analisa feedbacks do B2 e gera insights de aprendizado", type="secondary", disabled=not B2_CONFIGURED):
         with st.spinner("🔄 Processando feedbacks do B2..."):
             resultado = processar_feedbacks_para_aprendizado()
 
