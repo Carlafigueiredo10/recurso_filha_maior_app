@@ -6,6 +6,7 @@ from pathlib import Path
 from openai import OpenAI
 import boto3
 from io import StringIO, BytesIO
+import base64
 
 # carregar chave da API do secrets (Streamlit Cloud)
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -496,146 +497,247 @@ def analisar_com_matriz(achado, argumentos):
 
 # --------- Gerar corpo do ofício ---------
 def gerar_corpo_oficio(decisao, achado, argumentos, outros, alegacoes, texto_defesa_previa, dados_identificacao, descricao_indicio):
-    """Gera o corpo do ofício focado na análise dos argumentos (item 15 improcedente ou item 13 procedente)."""
+    """
+    Gera o corpo do ofício usando GPT com RAG (Retrieval-Augmented Generation).
+    O GPT lê os textos dos templates item 15 e 13 e gera APENAS o item 15/13 (análise dos argumentos).
+    """
+    try:
+        from templates_textos import (
+            ITEM15_ACHADOS, ITEM15_ARGUMENTOS,
+            ITEM13_ACHADOS, ITEM13_ARGUMENTOS
+        )
+    except ImportError:
+        return "ERRO: Arquivo templates_textos.py não encontrado. Verifique se o arquivo existe no diretório."
 
     # Preparar lista de argumentos apresentados
     args_lista = "\n".join([f"- Argumento {num}: {ARG_MAP.get(num, 'Não identificado')}" for num in argumentos])
-    outros_lista = "\n".join([f"- {o}" for o in outros]) if outros else "Nenhum argumento adicional"
 
-    # Dados da pensionista
-    nome = dados_identificacao.get("nome", "[NOME NÃO IDENTIFICADO]")
-    cpf = dados_identificacao.get("cpf", "[CPF NÃO IDENTIFICADO]")
-    codigo = dados_identificacao.get("codigo_indicio", "[CÓDIGO NÃO IDENTIFICADO]")
+    # Selecionar templates conforme decisão
+    if decisao == "improcedente":
+        dict_achados = ITEM15_ACHADOS
+        dict_argumentos = ITEM15_ARGUMENTOS
+        item_num = "15"
+    else:
+        dict_achados = ITEM13_ACHADOS
+        dict_argumentos = ITEM13_ARGUMENTOS
+        item_num = "13"
 
-    # Carregar template do ofício como referência (APENAS para procedente)
-    template_texto = ""
-    if decisao == "procedente":
-        try:
-            item13_conteudo = extrair_item_template("procedente")
-            if item13_conteudo:
-                template_texto = f"""
+    # Montar textos de referência do template
+    texto_achado_ref = dict_achados.get(achado, "[Achado não encontrado no template]")
 
-### 📄 ITEM 13 DO TEMPLATE (PROCEDENTE) - SIGA ESTE MODELO
-O item 13 do template de ofício procedente mostra COMO escrever quando o recurso é PROCEDENTE:
+    textos_args_ref = []
+    for num in argumentos:
+        texto_arg = dict_argumentos.get(num)
+        if texto_arg:
+            arg_nome = ARG_MAP.get(num, f"Argumento {num}")
+            textos_args_ref.append(f"**{arg_nome}:**\n{texto_arg}")
 
-{item13_conteudo[:2000]}
-
-⚠️ **IMPORTANTE**: Use este item 13 como GUIA de estilo, tom, estrutura e argumentação.
-- Observe COMO ele justifica que os argumentos AFASTAM o achado do TCU
-- Observe COMO ele conclui pela MANUTENÇÃO do benefício
-- Adapte o conteúdo ao caso específico atual.
-"""
-        except:
-            pass  # Se não conseguir carregar template, continua sem
-
-    # Tentar carregar feedbacks para aprendizado adicional
-    exemplos_aprendizado = ""
-    try:
-        df_feedbacks = download_feedbacks_from_b2()
-        if not df_feedbacks.empty:
-            # Filtrar exemplos corretos com mesmo tipo de achado e decisão
-            corretos_similares = df_feedbacks[
-                (df_feedbacks['avaliacao'] == 'correto') &
-                (df_feedbacks['achado'] == achado) &
-                (df_feedbacks['decisao'] == decisao)
-            ]
-
-            if len(corretos_similares) > 0:
-                exemplo = corretos_similares.iloc[0]
-                exemplos_aprendizado = f"""
-
-### ✅ EXEMPLO DE ANÁLISE APROVADA (mesmo tipo de caso)
-**Achado:** {exemplo['achado']}
-**Decisão:** {exemplo['decisao']}
-**Texto aprovado:**
-{exemplo['corpo_oficio'][:800]}
-
-⚠️ Use este exemplo como REFERÊNCIA adicional de qualidade.
-"""
-    except:
-        pass  # Se não conseguir carregar feedbacks, continua sem exemplos
+    textos_args_formatados = "\n\n".join(textos_args_ref) if textos_args_ref else "[Nenhum argumento mapeado no template]"
 
     prompt = f"""
-Você é um especialista em redação de Notas Técnicas no formato SEI para análise de recursos de pensão de filha maior solteira.
+Você é um sistema de montagem de documentos que usa textos literais pré-definidos.
 
-### DADOS DO CASO
-**Pensionista:** {nome}
-**CPF:** {cpf}
-**Código do Indício:** {codigo}
+### INSTRUÇÕES CRÍTICAS
+Gere APENAS o ITEM {item_num} usando EXATAMENTE os textos fornecidos abaixo.
+NÃO gere item 16, conclusão ou outros parágrafos.
 
-**Descrição do Indício (TCU):**
-{descricao_indicio}
-
-**Achado classificado:** {achado}
-
-**Decisão:** {decisao.upper()}
-
-### ALEGAÇÕES DO RECURSO
-{alegacoes}
-
-### ARGUMENTOS MAPEADOS
+### ARGUMENTOS DO CASO
 {args_lista}
 
-### ARGUMENTOS NÃO MAPEADOS
-{outros_lista}
-{template_texto}
-{exemplos_aprendizado}
+### TEXTOS LITERAIS (COPIE EXATAMENTE COMO ESTÃO)
+
+#### TEXTO PARA O ACHADO "{achado}":
+{texto_achado_ref}
+
+#### TEXTOS PARA CADA ARGUMENTO:
+{textos_args_formatados}
 
 ### TAREFA
-Gere a Nota Técnica completa no formato SEI, conforme {'item 15' if decisao == 'improcedente' else 'item 13'} do modelo de ofício.
+Monte o item {item_num} no seguinte formato:
 
-**Estrutura da Nota Técnica SEI:**
+**{item_num}. Dos argumentos apresentados no recurso pela Interessada, segue análise:**
 
-1. Parágrafo introdutório: "Dos argumentos apresentados no recurso pela Interessada, segue análise:"
+Depois, para cada argumento na lista acima:
+- Adicione o título do argumento
+- Cole o texto literal fornecido para aquele argumento
+- Pule uma linha
 
-2-N. Para CADA argumento/alegação, escrever UM parágrafo no seguinte estilo:
-   **Formato:** "A Interessada alega que [resumo do argumento]. Análise: [fundamentação jurídica]. Conclusão: [conclusão sobre o argumento]."
-
-   **{'EXEMPLO - RECURSO IMPROCEDENTE' if decisao == 'improcedente' else 'EXEMPLO - RECURSO PROCEDENTE'}:**
-   {'A Interessada alega que nunca manteve união estável com o suposto companheiro. Análise: A condição de solteira no registro civil é um dos elementos que compõem a análise da situação de dependência econômica e familiar. A legislação pertinente, especialmente a Lei 3.373/1958, estabelece que a dependência econômica deve ser analisada em conjunto com outros fatores, como a convivência e a constituição de família. O art. 1.723 do Código Civil define união estável como convivência pública, contínua e duradoura, estabelecida com o objetivo de constituição de família. Conclusão: A mera condição de solteira não impede a configuração de união estável, pois é a existência de filho em comum que indica os deveres de sustento e educação dos filhos no âmbito da união estável, não sendo suficiente para afastar o achado do TCU.' if decisao == 'improcedente' else 'A Interessada alega que nunca manteve união estável com o suposto companheiro, apresentando certidão de casamento com terceiro no período. Análise: A Lei 3.373/1958 estabelece que a pensão é devida apenas à filha maior solteira sem meios de prover a própria subsistência, sendo incompatível com a condição de casada ou em união estável. A apresentação de certidão de casamento com terceiro contemporânea ao período analisado demonstra a impossibilidade de configuração de união estável simultânea. Conclusão: As provas documentais apresentadas comprovam que a Interessada não mantinha união estável, afastando o achado do TCU e demonstrando o direito à manutenção do benefício.'}
-
-N+1. Parágrafo final de conclusão: Fundamentar a decisão final ({decisao.upper()}) com base na análise dos argumentos
-
-**REGRAS IMPORTANTES:**
-- Use SEMPRE linguagem de Nota Técnica SEI: "A Interessada alega que...", "Conforme disposto...", "Assim..."
-- Numere os parágrafos (1., 2., 3., etc.)
-- Mantenha tom jurídico, técnico e objetivo
-- Cite legislação pertinente (Lei 3.373/1958, Acórdãos do TCU 7972/2017-2ªC, Código Civil)
-- **{'IMPROCEDENTE: Explique que as alegações NÃO são suficientes para AFASTAR o achado do TCU. A pensionista PERDE o benefício.' if decisao == 'improcedente' else 'PROCEDENTE: Explique que as alegações COMPROVAM a INEXISTÊNCIA de união estável. A pensionista MANTÉM o benefício.'}**
-- Seja completo e fundamentado
-- NÃO inclua cabeçalhos de seção, rodapés ou assinaturas
+**REGRAS ABSOLUTAS:**
+- Gere APENAS o item {item_num}
+- NÃO inclua item 16
+- NÃO inclua conclusão (parágrafos 17-20)
+- USE os textos LITERAIS - NÃO reescreva
+- NÃO invente textos novos
+- PARE após o último argumento
 """
 
     resp = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
+        temperature=0.1  # Baixa temperatura para manter fidelidade aos templates
     )
 
     return resp.choices[0].message.content
 
+# --------- Carregar logo em base64 ---------
+def get_logo_base64():
+    """Converte robo.png para base64 para incorporar no HTML"""
+    try:
+        with open("robo.png", "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except:
+        return None
+
 # ------------------ INTERFACE ------------------
 
-st.title("📑 Analisador de Recursos - Filha Maior Solteira")
+# CSS Customizado - Tema Cyberpunk
+st.markdown("""
+<style>
+/* Importar fonte futurista */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
-# Aviso se B2 não estiver configurado
-if not B2_CONFIGURED:
-    st.info("""
-    ℹ️ **Sistema de Feedbacks Desabilitado**
+/* Background escuro */
+.stApp {
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1d2e 100%);
+}
 
-    Para habilitar o sistema de aprendizado com feedbacks, configure as credenciais do Backblaze B2 nos Secrets:
-    - `B2_ENDPOINT` (exemplo: https://s3.us-east-005.backblazeb2.com)
-    - `B2_KEY_ID` (use o S3 Access Key ID, não Application Key ID)
-    - `B2_APPLICATION_KEY` (use o S3 Secret Key)
-    - `B2_BUCKET_NAME` (nome do seu bucket)
+/* Título principal com robô */
+h1 {
+    font-family: 'Orbitron', sans-serif !important;
+    color: #00d9ff !important;
+    text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
+    letter-spacing: 3px;
+    font-weight: 900 !important;
+    margin-bottom: 30px !important;
+}
 
-    **Importante:** Use as credenciais S3-compatible, não as credenciais nativas do B2!
-    """)
+/* Headers das seções */
+h2, h3 {
+    font-family: 'Orbitron', sans-serif !important;
+    color: #00d9ff !important;
+    text-shadow: 0 0 3px rgba(0, 217, 255, 0.3);
+    letter-spacing: 2px;
+}
 
-# Botão de processar feedbacks no topo
-col_titulo, col_feedback_btn = st.columns([3, 1])
-with col_feedback_btn:
-    if st.button("🧠 Processar Feedbacks", help="Analisa feedbacks do B2 e gera insights de aprendizado", type="secondary", disabled=not B2_CONFIGURED):
+/* Logo do robô */
+.logo-robo {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4));
+    margin-right: 20px;
+    vertical-align: middle;
+}
+
+/* Cards das seções */
+.element-container {
+    background: rgba(26, 29, 36, 0.6);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.1);
+}
+
+/* Botões */
+.stButton button {
+    background: linear-gradient(135deg, #00d9ff 0%, #0066cc 100%) !important;
+    color: #0a0e27 !important;
+    font-family: 'Orbitron', sans-serif !important;
+    font-weight: 700 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 10px 30px !important;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.5) !important;
+    transition: all 0.3s ease !important;
+    letter-spacing: 1px !important;
+}
+
+.stButton button:hover {
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.8) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Botões do topo - altura reduzida */
+.stButton button[kind="secondary"] {
+    padding: 6px 20px !important;
+    font-size: 14px !important;
+    height: 35px !important;
+}
+
+/* Inputs */
+.stTextInput input, .stTextArea textarea {
+    background: rgba(26, 29, 36, 0.8) !important;
+    border: 1px solid #00d9ff !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+}
+
+/* Info boxes */
+.stInfo {
+    background: rgba(0, 217, 255, 0.1) !important;
+    border-left: 4px solid #00d9ff !important;
+}
+
+/* Success boxes */
+.stSuccess {
+    background: rgba(0, 255, 136, 0.1) !important;
+    border-left: 4px solid #00ff88 !important;
+}
+
+/* Error boxes */
+.stError {
+    background: rgba(255, 68, 68, 0.1) !important;
+    border-left: 4px solid #ff4444 !important;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0a0e27 0%, #1a1d2e 100%);
+    border-right: 2px solid rgba(0, 217, 255, 0.3);
+}
+
+/* Divider */
+hr {
+    border-color: rgba(0, 217, 255, 0.3) !important;
+}
+
+/* Números das seções com glow */
+h2::before {
+    content: '▸ ';
+    color: #00d9ff;
+    text-shadow: 0 0 10px #00d9ff;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Título com logo do robô
+logo_base64 = get_logo_base64()
+
+if logo_base64:
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; margin-bottom: 30px; gap: 20px;">
+        <img src="data:image/png;base64,{logo_base64}" style="width: 120px; filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.6));">
+        <div>
+            <h1 style="margin: 0; padding: 0; font-size: 3.5em; line-height: 1;">ANALISADOR DE RECURSOS</h1>
+            <p style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-size: 18px; margin: 10px 0 0 0; padding: 0; letter-spacing: 3px;">
+                Filha Maior Solteira
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <h1 style="margin: 0; padding: 0;">🤖 ANALISADOR DE RECURSOS</h1>
+    <p style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-size: 18px; letter-spacing: 3px;">
+        Filha Maior Solteira
+    </p>
+    """, unsafe_allow_html=True)
+
+# Botões logo abaixo do título, ocupando largura total
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    if st.button("🧠 Processar Feedbacks", help="Analisa feedbacks do B2 e gera insights", type="secondary", disabled=not B2_CONFIGURED, use_container_width=True):
         with st.spinner("🔄 Processando feedbacks do B2..."):
             resultado = processar_feedbacks_para_aprendizado()
 
@@ -682,15 +784,29 @@ with col_feedback_btn:
                         with st.expander(f"Exemplo {i}: {ex['achado']} → {ex['decisao']}"):
                             st.text(ex['corpo_oficio'])
 
-st.divider()
+with col_btn2:
+    if st.button("🔄 Reiniciar", help="Limpar tudo e recomeçar", type="secondary", use_container_width=True):
+        # Limpar session_state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
 
-# 1. Upload do PDF do Extrato (TCU)
-st.header("1️⃣ Upload do PDF do Extrato (TCU)")
-extrato_file = st.file_uploader("Selecione o arquivo PDF do extrato do TCU", type=["pdf"], key="extrato")
+# Aviso se B2 não estiver configurado
+if not B2_CONFIGURED:
+    st.warning("⚠️ **Sistema de Feedbacks Desabilitado** - Configure as credenciais B2 S3-compatible nos Secrets")
 
-# 2. Upload do PDF do Recurso
-st.header("2️⃣ Upload do PDF do Recurso apresentado pela pensionista")
-defesa_file = st.file_uploader("Selecione o arquivo PDF do recurso", type=["pdf"], key="recurso")
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Layout em 2 colunas para uploads
+col_upload1, col_upload2 = st.columns(2)
+
+with col_upload1:
+    st.markdown("### 1️⃣ PDF do Extrato (TCU)")
+    extrato_file = st.file_uploader("Selecione o arquivo PDF do extrato", type=["pdf"], key="extrato", label_visibility="collapsed")
+
+with col_upload2:
+    st.markdown("### 2️⃣ PDF do Recurso")
+    defesa_file = st.file_uploader("Selecione o arquivo PDF do recurso", type=["pdf"], key="recurso", label_visibility="collapsed")
 
 if extrato_file and defesa_file:
     texto_extrato = extrair_texto(extrato_file)
@@ -711,72 +827,57 @@ if extrato_file and defesa_file:
         dados_identificacao = {"nome": None, "cpf": None, "codigo_indicio": None}
 
     # 3. Dados da Pensionista
-    st.header("3️⃣ Dados da Pensionista")
-    st.caption("Informações extraídas do extrato TCU")
+    st.markdown("### 3️⃣ Dados da Pensionista")
 
     nome = dados_identificacao.get("nome", "Não identificado")
     cpf = dados_identificacao.get("cpf", "Não identificado")
     codigo = dados_identificacao.get("codigo_indicio", "Não identificado")
 
-    dados_completos = f"Nome: {nome}\nCPF: {cpf}\nCódigo do Indício: {codigo}"
-
-    # Adicionar CSS para texto mais escuro e auto-height
-    st.markdown("""
-    <style>
-    .stTextArea textarea {
-        color: #1f1f1f !important;
-        font-weight: 500 !important;
-    }
-    div[data-testid="stText"] {
-        color: #1f1f1f !important;
-        font-weight: 500 !important;
-        background-color: #f0f2f6;
-        padding: 15px;
-        border-radius: 5px;
-        font-family: monospace;
-        white-space: pre-wrap;
-        line-height: 1.8;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns([10, 1])
-    with col1:
+    # Layout em 3 colunas para dados compactos
+    col_nome, col_cpf, col_codigo = st.columns(3)
+    with col_nome:
         st.markdown(f"""
-        <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; font-family: monospace; line-height: 1.8;">
-        {dados_completos}
+        <div style="background: rgba(0, 217, 255, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
+            <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">NOME</div>
+            <div style="color: #ffffff; font-size: 14px; margin-top: 5px;">{nome}</div>
         </div>
         """, unsafe_allow_html=True)
-    with col2:
-        st.write("")  # Espaço
-        if st.button("📋", key="copy_dados", help="Copiar dados"):
-            st.code(dados_completos, language=None)
 
-    st.divider()
+    with col_cpf:
+        st.markdown(f"""
+        <div style="background: rgba(0, 217, 255, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
+            <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">CPF</div>
+            <div style="color: #ffffff; font-size: 14px; margin-top: 5px;">{cpf}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_codigo:
+        st.markdown(f"""
+        <div style="background: rgba(0, 217, 255, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
+            <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">CÓDIGO INDÍCIO</div>
+            <div style="color: #ffffff; font-size: 14px; margin-top: 5px;">{codigo}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 4. Descrição do Indício (TCU)
     descricao_indicio = dados_identificacao.get("descricao_indicio", None)
-    st.header("4️⃣ Descrição do Indício (TCU)")
-    st.caption("Evidências específicas do caso extraídas do extrato")
+    st.markdown("### 4️⃣ Descrição do Indício (TCU)")
 
     if descricao_indicio:
-        col1, col2 = st.columns([10, 1])
-        with col1:
-            st.markdown(f"""
-            <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; font-family: monospace; line-height: 1.8; max-height: none;">
-            {descricao_indicio}
-            </div>
-            """, unsafe_allow_html=True)
-        with col2:
-            st.write("")  # Espaço
-            if st.button("📋", key="copy_descricao", help="Copiar descrição"):
-                st.code(descricao_indicio, language=None)
+        st.markdown(f"""
+        <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; border: 1px solid rgba(0, 217, 255, 0.3);">
+        {descricao_indicio}
+        </div>
+        """, unsafe_allow_html=True)
     else:
         st.warning("⚠️ Descrição do indício não foi identificada no extrato.")
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
     # 5. Achado TCU (classificação baseada APENAS no extrato)
-    st.header("5️⃣ Achado TCU")
-    st.caption("Classificação das provas de união estável identificadas pelo TCU no extrato")
+    st.markdown("### 5️⃣ Achado TCU")
 
     with st.spinner("🔎 Classificando achado do TCU..."):
         # Usar a descrição do indício extraída, não o texto completo do extrato
@@ -800,77 +901,78 @@ if extrato_file and defesa_file:
     # Salvar achado no session_state para usar no feedback
     st.session_state.achado_atual = achado
 
-    st.info(f"**Achado classificado:** {achado}")
+    st.markdown(f"""
+    <div style="background: rgba(0, 217, 255, 0.15); padding: 15px; border-radius: 5px; border-left: 4px solid #00d9ff;">
+        <span style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-weight: 600;">📊 Achado classificado:</span>
+        <span style="color: #ffffff; font-size: 16px; margin-left: 10px;">{achado}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 6. Recurso apresentado (alegações da pensionista)
-    st.header("6️⃣ Recurso apresentado")
-    st.caption("Alegações/argumentos extraídos do recurso da pensionista")
+    st.markdown("### 6️⃣ Recurso apresentado")
 
     with st.spinner("📝 Extraindo alegações do recurso..."):
         alegacoes_recurso = extrair_alegacoes_recurso(texto_defesa)
 
-    col1, col2 = st.columns([10, 1])
-    with col1:
-        st.markdown(f"""
-        <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; font-family: monospace; line-height: 1.8; white-space: pre-wrap;">
-        {alegacoes_recurso}
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.write("")  # Espaço
-        if st.button("📋", key="copy_alegacoes", help="Copiar alegações"):
-            st.code(alegacoes_recurso, language=None)
+    st.markdown(f"""
+    <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; white-space: pre-wrap; border: 1px solid rgba(0, 217, 255, 0.3);">
+    {alegacoes_recurso}
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 7. Pergunta sobre defesa prévia
-    st.header("7️⃣ Defesa Prévia")
-    st.caption("A pensionista havia apresentado defesa anteriormente?")
+    st.markdown("### 7️⃣ Defesa Prévia")
 
-    defesa_previa = st.radio(
-        "Selecione:",
-        ["Sim", "Não"],
-        key="defesa_previa",
-        horizontal=True
-    )
+    col_radio1, col_radio2 = st.columns([2, 8])
+    with col_radio1:
+        defesa_previa = st.radio(
+            "A pensionista havia apresentado defesa anteriormente?",
+            ["Sim", "Não"],
+            key="defesa_previa",
+            label_visibility="collapsed"
+        )
 
     if defesa_previa == "Sim":
         texto_defesa_previa = """A Interessada foi devidamente notificada para apresentar defesa em observância aos princípios do contraditório e ampla defesa. Tendo sua defesa sido analisada e julgada na decisão administrativa anterior. Inconformada, a Interessada apresentou recurso tempestivo, o qual passa a ser objeto da presente Nota Técnica."""
     else:
         texto_defesa_previa = """A Interessada foi devidamente notificada para apresentar defesa em observância aos princípios do contraditório e ampla defesa. Todavia registrou-se a ausência de defesa, razão pela qual a decisão administrativa anterior foi proferida com base nos elementos constantes dos autos. Ainda assim, a Interessada apresentou recurso tempestivo, que agora se examina na presente Nota Técnica."""
 
-    col1, col2 = st.columns([10, 1])
-    with col1:
-        st.markdown(f"""
-        <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8;">
-        {texto_defesa_previa}
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.write("")  # Espaço
-        if st.button("📋", key="copy_defesa_previa", help="Copiar texto"):
-            st.code(texto_defesa_previa, language=None)
+    st.markdown(f"""
+    <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; border: 1px solid rgba(0, 217, 255, 0.3);">
+    {texto_defesa_previa}
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 8. Decisão
-    st.header("8️⃣ Decisão")
-    st.caption("Decisão calculada com base na matriz de decisão")
+    st.markdown("### 8️⃣ Decisão")
 
     s1, s2 = analisar_com_matriz(achado, argumentos)
 
     if s1 == "procedente":
-        st.success(f"✅ **Recurso PROCEDENTE**")
+        st.markdown(f"""
+        <div style="background: rgba(34, 197, 94, 0.2); padding: 20px; border-radius: 8px; border-left: 5px solid #22c55e;">
+            <div style="color: #22c55e; font-size: 24px; font-family: 'Orbitron', sans-serif; font-weight: 700;">✅ RECURSO PROCEDENTE</div>
+            <div style="color: #ffffff; margin-top: 10px; font-size: 14px;">{s2}</div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.error(f"❌ **Recurso IMPROCEDENTE**")
+        st.markdown(f"""
+        <div style="background: rgba(239, 68, 68, 0.2); padding: 20px; border-radius: 8px; border-left: 5px solid #ef4444;">
+            <div style="color: #ef4444; font-size: 24px; font-family: 'Orbitron', sans-serif; font-weight: 700;">❌ RECURSO IMPROCEDENTE</div>
+            <div style="color: #ffffff; margin-top: 10px; font-size: 14px;">{s2}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.text(s2)
-
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 9. Pontos de Atenção
-    st.header("9️⃣ Pontos de Atenção")
-    st.caption("Argumentos não mapeados ou que requerem atenção especial")
+    st.markdown("### 9️⃣ Pontos de Atenção")
 
     # --- Outros argumentos não mapeados ---
     if outros:
@@ -891,45 +993,49 @@ if extrato_file and defesa_file:
     else:
         st.success("✅ Todos os argumentos foram mapeados com sucesso.")
 
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # 10. Corpo do Ofício
-    st.header("🔟 Corpo do Ofício")
-    st.caption(f"Minuta baseada no template {'improcedente (item 15)' if s1 == 'improcedente' else 'procedente (item 13)'}")
+    st.markdown("### 🔟 Corpo do Ofício")
 
-    if st.button("🚀 Gerar Corpo do Ofício", type="primary", key="gerar_oficio"):
-        # Usar session_state para armazenar o ofício gerado
-        with st.spinner("Gerando ofício..."):
-            # Gerar ofício com análise dos argumentos
-            st.session_state.corpo_oficio = gerar_corpo_oficio(
-                decisao=s1,
-                achado=achado,
-                argumentos=argumentos,
-                outros=outros,
-                alegacoes=alegacoes_recurso,
-                texto_defesa_previa=texto_defesa_previa,
-                dados_identificacao=dados_identificacao,
-                descricao_indicio=descricao_indicio
-            )
-            st.session_state.dados_oficio = {
-                'nome': nome,
-                'cpf': cpf,
-                'codigo': codigo,
-                'decisao': s1
-            }
+    col_btn_gerar, col_btn_download = st.columns([2, 2])
 
-        st.success("✅ Ofício gerado com sucesso! Veja na barra lateral →")
+    with col_btn_gerar:
+        if st.button("🚀 Gerar Corpo do Ofício", type="primary", key="gerar_oficio", use_container_width=True):
+            # Usar session_state para armazenar o ofício gerado
+            with st.spinner("Gerando ofício..."):
+                # Gerar ofício com análise dos argumentos
+                st.session_state.corpo_oficio = gerar_corpo_oficio(
+                    decisao=s1,
+                    achado=achado,
+                    argumentos=argumentos,
+                    outros=outros,
+                    alegacoes=alegacoes_recurso,
+                    texto_defesa_previa=texto_defesa_previa,
+                    dados_identificacao=dados_identificacao,
+                    descricao_indicio=descricao_indicio
+                )
+                st.session_state.dados_oficio = {
+                    'nome': nome,
+                    'cpf': cpf,
+                    'codigo': codigo,
+                    'decisao': s1
+                }
+
+            st.success("✅ Ofício gerado com sucesso! Veja na barra lateral →")
 
     # Botão de download (sempre visível se já foi gerado)
-    if 'corpo_oficio' in st.session_state:
-        dados = st.session_state.dados_oficio
-        st.download_button(
-            label="📥 Baixar Ofício (.txt)",
-            data=st.session_state.corpo_oficio,
-            file_name=f"oficio_{dados['decisao']}_{dados['codigo']}_{dados['nome'][:30].replace(' ', '_')}.txt",
-            mime="text/plain",
-            key="download_oficio"
-        )
+    with col_btn_download:
+        if 'corpo_oficio' in st.session_state and 'dados_oficio' in st.session_state:
+            dados = st.session_state.dados_oficio
+            st.download_button(
+                label="📥 Baixar Ofício (.txt)",
+                data=st.session_state.corpo_oficio,
+                file_name=f"oficio_{dados['decisao']}_{dados['codigo']}_{dados['nome'][:30].replace(' ', '_')}.txt",
+                mime="text/plain",
+                key="download_oficio",
+                use_container_width=True
+            )
 
 # CSS para aumentar a largura da sidebar
 st.markdown("""
@@ -975,14 +1081,17 @@ if 'corpo_oficio' in st.session_state:
 
         st.markdown("---")
 
-        # Corpo do ofício com formatação melhorada
+        # Corpo do ofício com formatação melhorada - FUNDO BRANCO
         st.markdown(f"""
         <div style="
-            color: #1f1f1f;
+            background-color: #ffffff;
+            color: #000000;
             line-height: 1.8;
             font-size: 14px;
             text-align: justify;
-            padding: 10px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #00d9ff;
         ">
         {st.session_state.corpo_oficio.replace(chr(10), '<br><br>')}
         </div>
