@@ -255,12 +255,12 @@ Analise o texto do extrato abaixo e extraia as seguintes informações da TABELA
    - Extraia o nome COMPLETO da pessoa, sem omitir nenhuma parte
    - Se encontrar algo como "Pensionista filha maior solteira" ou "Pensionista em união estável", isso NÃO é nome - procure o nome real da pessoa
 
-4. **Descrição do Indício**: Extraia SOMENTE a parte específica do caso no campo "Descrição"
-   ⚠️ ATENÇÃO: Extraia apenas desde "Pensionista filha maior..." até ANTES da palavra "Critério:"
-   - NÃO inclua a parte que começa com "Critério: A Lei 3373/1958..."
-   - NÃO inclua jurisprudência, acórdãos ou fundamentação legal
-   - Inclua APENAS: o texto inicial + "Evidências do indício:" + as evidências específicas do caso
-   - PARE quando encontrar a palavra "Critério:"
+4. **Descrição do Indício**: Extraia TODO o conteúdo do campo "Descrição" da tabela
+   ⚠️ ATENÇÃO: Extraia TUDO desde o INÍCIO do campo "Descrição" até ANTES da palavra "Critério:"
+   - Inclua TUDO: nome da filha entre parênteses, nome do companheiro, CPFs mencionados, endereços completos, bases cadastrais (RECEITA FEDERAL, RENACH, etc.)
+   - Exemplo completo: "Pensionista possui filho em comum (ANDREZZA JATAY MOTA GARROS) e compartilha o mesmo endereço com AMELIO GENTIL GARROS (CPF: 30783690720) - Endereço em comum: DR PAULO SANFORD, 130, bairro EDSON QUEIROZ CEP 60834422 - FORTALEZA (CE) Endereço encontrado na base RECEITA FEDERAL, para o CPF 30783690720 e na base RENACH, para o CPF 36266655349"
+   - PARE somente quando encontrar a palavra "Critério:"
+   - NÃO inclua a fundamentação legal que vem depois de "Critério: A Lei 3373/1958..."
 
 ### Texto do Extrato:
 {texto_extrato}
@@ -288,9 +288,11 @@ Responda apenas com JSON válido, sem explicações, sem Markdown, no seguinte f
 **REGRAS IMPORTANTES:**
 - Nome: extraia o nome COMPLETO da pensionista da coluna "Nome" (não omita partes)
 - CPF: extraia SOMENTE o CPF da coluna "CPF" da tabela (NÃO pegue CPFs da descrição)
-- Descrição: extraia desde "Pensionista filha maior..." até ANTES de "Critério:" (NÃO inclua a fundamentação legal)
-- A descrição deve conter APENAS as evidências específicas do caso
-- PARE a extração quando encontrar a palavra "Critério:"
+- Descrição: extraia TODO o conteúdo do campo "Descrição" desde o INÍCIO até ANTES de "Critério:"
+- A descrição deve incluir TUDO: filhos mencionados, companheiros, CPFs citados, endereços completos, bases cadastrais
+- NÃO corte informações - pegue o texto completo do campo Descrição
+- PARE a extração somente quando encontrar a palavra "Critério:"
+- NÃO inclua a fundamentação legal que aparece após "Critério:"
 - Se não encontrar alguma informação, use null no campo correspondente
 """
     resp = client.chat.completions.create(
@@ -333,16 +335,16 @@ Escolha um dos seguintes rótulos:
 
 ⚠️ IMPORTANTE - Diferenciar CONFISSÃO vs NEGAÇÃO de filho:
 - **Argumento 2** ("Filho em comum não caracteriza"): quando a defesa ADMITE que existe filho, mas NEGA que isso caracteriza união estável
-- **Argumento 12** ("Defesa admite filho em comum"): quando a defesa simplesmente CONFIRMA/ADMITE ter filho SEM negar a união estável
+- **Argumento 12** ("Defesa admite filho em comum"): USO ESPECÍFICO - Use SOMENTE quando:
+  * O achado do TCU classificado é "Apenas CadÚnico" (extrato NÃO menciona filho)
+  * E a defesa REVELA/ADMITE que existe filho em comum
+  * Isso transforma o caso de prova fraca (só CadÚnico) em prova forte (CadÚnico + Filho revelado pela defesa)
 
 ⚠️ Importante: trate como **Argumento 2** quando mencionar:
 - "filho em comum não significa união estável"
 - "mera existência de filho não caracteriza"
 - "filho não comprova união"
-
-⚠️ Importante: trate como **Argumento 12** quando:
-- Defesa confirma/admite filho SEM contestar união estável
-- Menciona filho mas não argumenta que isso é irrelevante
+- E o achado do TCU JÁ INCLUI filho ("Apenas 1 filho", "Mais de 1 filho", "Filho + CadÚnico", "Filho + endereço")
 
 3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
 
@@ -722,14 +724,9 @@ h2::before {
     text-shadow: 0 0 10px #00d9ff;
 }
 
-/* Animação pulsante do logo */
+/* Logo do robô - sombra estática */
 .logo-robo-pulse {
-    animation: pulse 2s infinite alternate;
-}
-
-@keyframes pulse {
-    from { filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.4)); }
-    to { filter: drop-shadow(0 0 25px rgba(0, 217, 255, 0.9)); }
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.6));
 }
 </style>
 """, unsafe_allow_html=True)
@@ -851,35 +848,40 @@ if extrato_file and defesa_file:
         dados_identificacao = {"nome": None, "cpf": None, "codigo_indicio": None}
 
     # 3. Dados da Pensionista
-    st.markdown("### 3️⃣ Dados da Pensionista")
-
-    nome = dados_identificacao.get("nome", "Não identificado")
-    cpf = dados_identificacao.get("cpf", "Não identificado")
-    codigo = dados_identificacao.get("codigo_indicio", "Não identificado")
+    col_header3, col_copy3 = st.columns([9, 1])
+    with col_header3:
+        st.markdown("### 3️⃣ Dados da Pensionista")
+    with col_copy3:
+        nome = dados_identificacao.get("nome", "Não identificado")
+        cpf = dados_identificacao.get("cpf", "Não identificado")
+        codigo = dados_identificacao.get("codigo_indicio", "Não identificado")
+        dados_texto = f"Nome: {nome}\nCPF: {cpf}\nCódigo: {codigo}"
+        if st.button("📋", key="copy_dados", help="Copiar dados da pensionista"):
+            st.code(dados_texto, language=None)
 
     # Layout em 3 colunas para dados compactos
     col_nome, col_cpf, col_codigo = st.columns(3)
     with col_nome:
         st.markdown(f"""
-        <div style="background: rgba(0, 217, 255, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
+        <div style="background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
             <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">NOME</div>
-            <div style="color: #ffffff; font-size: 14px; margin-top: 5px;">{nome}</div>
+            <div style="color: #1f1f1f; font-size: 14px; margin-top: 5px; font-weight: 500;">{nome}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_cpf:
         st.markdown(f"""
-        <div style="background: rgba(0, 217, 255, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
+        <div style="background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
             <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">CPF</div>
-            <div style="color: #ffffff; font-size: 14px; margin-top: 5px;">{cpf}</div>
+            <div style="color: #1f1f1f; font-size: 14px; margin-top: 5px; font-weight: 500;">{cpf}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_codigo:
         st.markdown(f"""
-        <div style="background: rgba(0, 217, 255, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
+        <div style="background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
             <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">CÓDIGO INDÍCIO</div>
-            <div style="color: #ffffff; font-size: 14px; margin-top: 5px;">{codigo}</div>
+            <div style="color: #1f1f1f; font-size: 14px; margin-top: 5px; font-weight: 500;">{codigo}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -887,7 +889,13 @@ if extrato_file and defesa_file:
 
     # 4. Descrição do Indício (TCU)
     descricao_indicio = dados_identificacao.get("descricao_indicio", None)
-    st.markdown("### 4️⃣ Descrição do Indício (TCU)")
+
+    col_header4, col_copy4 = st.columns([9, 1])
+    with col_header4:
+        st.markdown("### 4️⃣ Descrição do Indício (TCU)")
+    with col_copy4:
+        if descricao_indicio and st.button("📋", key="copy_descricao", help="Copiar descrição do indício"):
+            st.code(descricao_indicio, language=None)
 
     if descricao_indicio:
         st.markdown(f"""
@@ -949,7 +957,9 @@ if extrato_file and defesa_file:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # 7. Pergunta sobre defesa prévia
-    st.markdown("### 7️⃣ Defesa Prévia")
+    col_header7, col_copy7 = st.columns([9, 1])
+    with col_header7:
+        st.markdown("### 7️⃣ Defesa Prévia")
 
     col_radio1, col_radio2 = st.columns([2, 8])
     with col_radio1:
@@ -964,6 +974,10 @@ if extrato_file and defesa_file:
         texto_defesa_previa = """A Interessada foi devidamente notificada para apresentar defesa em observância aos princípios do contraditório e ampla defesa. Tendo sua defesa sido analisada e julgada na decisão administrativa anterior. Inconformada, a Interessada apresentou recurso tempestivo, o qual passa a ser objeto da presente Nota Técnica."""
     else:
         texto_defesa_previa = """A Interessada foi devidamente notificada para apresentar defesa em observância aos princípios do contraditório e ampla defesa. Todavia registrou-se a ausência de defesa, razão pela qual a decisão administrativa anterior foi proferida com base nos elementos constantes dos autos. Ainda assim, a Interessada apresentou recurso tempestivo, que agora se examina na presente Nota Técnica."""
+
+    with col_copy7:
+        if st.button("📋", key="copy_defesa_previa", help="Copiar texto da defesa prévia"):
+            st.code(texto_defesa_previa, language=None)
 
     st.markdown(f"""
     <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; border: 1px solid rgba(0, 217, 255, 0.3);">
