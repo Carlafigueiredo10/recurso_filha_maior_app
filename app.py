@@ -581,11 +581,25 @@ Depois, para cada argumento na lista acima:
 
 # --------- Carregar logo em base64 ---------
 def get_logo_base64():
-    """Converte robo.png para base64 para incorporar no HTML"""
+    """Carrega robo.png de forma compatível com Streamlit Cloud e local."""
     try:
-        with open("robo.png", "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    except:
+        # Caminho relativo à pasta do app.py
+        path_local = Path(__file__).parent / "robo.png"
+        if path_local.exists():
+            with open(path_local, "rb") as img_file:
+                return base64.b64encode(img_file.read()).decode()
+
+        # Caminho alternativo: subpasta "assets"
+        path_assets = Path(__file__).parent / "assets" / "robo.png"
+        if path_assets.exists():
+            with open(path_assets, "rb") as img_file:
+                return base64.b64encode(img_file.read()).decode()
+
+        # Caso não encontre, mostra aviso
+        st.warning("⚠️ Logo do robô não encontrado (robo.png). Exibindo título padrão.")
+        return None
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar logo: {e}")
         return None
 
 # ------------------ INTERFACE ------------------
@@ -707,6 +721,16 @@ h2::before {
     color: #00d9ff;
     text-shadow: 0 0 10px #00d9ff;
 }
+
+/* Animação pulsante do logo */
+.logo-robo-pulse {
+    animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+    from { filter: drop-shadow(0 0 5px rgba(0, 217, 255, 0.4)); }
+    to { filter: drop-shadow(0 0 25px rgba(0, 217, 255, 0.9)); }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -716,7 +740,7 @@ logo_base64 = get_logo_base64()
 if logo_base64:
     st.markdown(f"""
     <div style="display: flex; align-items: center; margin-bottom: 30px; gap: 20px;">
-        <img src="data:image/png;base64,{logo_base64}" style="width: 120px; filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.6));">
+        <img class="logo-robo-pulse" src="data:image/png;base64,{logo_base64}" style="width: 180px;">
         <div>
             <h1 style="margin: 0; padding: 0; font-size: 3.5em; line-height: 1;">ANALISADOR DE RECURSOS</h1>
             <p style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-size: 18px; margin: 10px 0 0 0; padding: 0; letter-spacing: 3px;">
