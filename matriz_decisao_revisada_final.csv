@@ -16,10 +16,10 @@ Filho + endereço,Testemunho de terceiros,improcedente
 Filho + endereço,Erro em bases cadastrais sem prova idônea,procedente
 Filho + endereço,Decisão judicial transitada em julgado,procedente
 Filho + endereço,Processo administrativo anterior sem novos elementos,procedente
-Filho + CadÚnico,Negativa de união estável,procedente
-Filho + CadÚnico,Testemunho de terceiros,procedente
+Filho + CadÚnico,Negativa de união estável,improcedente
+Filho + CadÚnico,Testemunho de terceiros,improcedente
 Filho + CadÚnico,Decisão judicial transitada em julgado,procedente
-Filho + CadÚnico,Erro cadastral comprovado,improcedente
+Filho + CadÚnico,Erro cadastral comprovado,procedente
 Mais de 1 filho,Negativa de união estável,improcedente
 Mais de 1 filho,Testemunho de terceiros,improcedente
 Mais de 1 filho,Decisão judicial transitada em julgado,procedente
