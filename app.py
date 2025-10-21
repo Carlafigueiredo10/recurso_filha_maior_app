@@ -657,13 +657,17 @@ Monte o item {item_num} no seguinte formato:
 
 **{item_num}. Dos argumentos apresentados no recurso pela Interessada, segue análise:**
 
-Depois, para cada argumento na lista acima:
+**PRIMEIRO:** Cole o texto literal do achado "{achado}"
+
+**DEPOIS:** Para cada argumento na lista acima:
 - Adicione o título do argumento
 - Cole o texto literal fornecido para aquele argumento
 - Pule uma linha
 
 **REGRAS ABSOLUTAS:**
 - Gere APENAS o item {item_num}
+- SEMPRE comece com o texto do achado
+- Depois adicione os textos dos argumentos
 - NÃO inclua item 16
 - NÃO inclua conclusão (parágrafos 17-20)
 - USE os textos LITERAIS - NÃO reescreva
