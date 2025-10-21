@@ -87,7 +87,7 @@ ITEM13_ARGUMENTOS = {
 
     "8": """A intenção de judicializar, quando fundamentada em documentação robusta que gera dúvida razoável, recomenda a manutenção administrativa do benefício.""",
 
-    "9": """O recebimento de pensão do INSS, quando acompanhado de documentação que esclarece as circunstâncias e gera dúvida sobre a união estável, não é suficiente isoladamente para descaracterizar a condição de filha solteira.""",
+    "9": """Constata-se que o indício apontado pelo TCU reproduz informação já examinada em processo administrativo anterior, encerrado com decisão favorável à interessada. A reapreciação da mesma matéria, sem a apresentação de fato novo, caracteriza hipótese de coisa julgada administrativa, vedando a revisão do ato em respeito ao art. 5º, XXXVI, da Constituição Federal, aos arts. 2º e 54 da Lei nº 9.784/1999, bem como ao princípio da segurança jurídica. Nesse contexto, aliado à jurisprudência do TRF4 (AC 5008179-59.2019.4.04.7100), verifica-se que não há novos elementos que legitimem a reapreciação da matéria, impondo-se o acolhimento do recurso e a manutenção do benefício.""",
 
     "10": """As declarações de terceiros, quando acompanhadas de outros elementos que geram dúvida razoável, devem ser consideradas no conjunto probatório.""",
 
