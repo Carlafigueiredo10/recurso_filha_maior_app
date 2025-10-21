@@ -372,13 +372,23 @@ Escolha um dos seguintes rótulos:
   * citação de precedentes ou súmulas genéricas
   * qualquer decisão que NÃO seja do caso concreto da pensionista
 
-- **Argumento 9** ("Processo administrativo anterior sem novos elementos"): Procure por QUALQUER menção a:
-  * processo administrativo anterior, PAD anterior, NUP anterior
-  * "decisões administrativas anteriores"
-  * processos que começam com "5000"
-  * "já foi julgado administrativamente"
-  * "processo administrativo julgado pela manutenção"
-  * "respaldado por decisões administrativas"
+- **Argumento 9** ("Processo administrativo anterior sem novos elementos"):
+  🚨 ATENÇÃO: Use quando a defesa mencionar que O CASO JÁ FOI JULGADO ADMINISTRATIVAMENTE antes
+
+  ✅ USE Argumento 9 quando mencionar:
+  * "Este caso já foi avaliado/auditado por este órgão anteriormente"
+  * "Conforme Nota Técnica anterior, foi deferida a manutenção"
+  * "Já existe decisão administrativa anterior favorável"
+  * "Processo administrativo anterior (NUP 5000....) julgou pela manutenção"
+  * "PAD anterior já analisou e deferiu o benefício"
+  * "Decisão administrativa anterior manteve a pensão"
+  * "Já foi objeto de processo administrativo sem novos elementos"
+  * Qualquer menção a processo/NUP que comece com "5000"
+
+  ❌ NÃO confunda com:
+  * Citação de normas/portarias administrativas gerais
+  * Menção a procedimentos administrativos genéricos
+  * Referência a rotinas administrativas do órgão
 
 ⚠️ IMPORTANTE - Argumento 10 ("Testemunho de terceiros"):
 - **Argumento 10**: Procure por QUALQUER menção a:
@@ -401,9 +411,18 @@ Escolha um dos seguintes rótulos:
 - "Existe sentença favorável à interessada no processo da Sra. Maria"
 - "Decisão judicial do caso concreto já julgou pela manutenção do benefício"
 
-⚠️ EXEMPLO - Argumento 9:
-Se o texto disser "A manutenção da pensão é respaldada por decisões judiciais e administrativas anteriores", você DEVE identificar:
-- Argumento 6 (se mencionar decisão judicial DO CASO) OU Argumento 9 (se mencionar processo administrativo anterior DO CASO)
+⚠️ EXEMPLOS PRÁTICOS - Argumento 9:
+
+❌ NÃO é Argumento 9 (apenas menção genérica a procedimentos):
+- "O procedimento administrativo deve ser conduzido conforme a Lei 9.784/99"
+- "As normas administrativas determinam que..."
+- "O órgão deve seguir os ritos administrativos estabelecidos"
+
+✅ SIM é Argumento 9 (caso JÁ FOI JULGADO ADMINISTRATIVAMENTE):
+- "Este mesmo caso já foi avaliado e devidamente auditado por este órgão, conforme Nota Técnica em anexo, foi deferida a manutenção da pensão"
+- "Processo administrativo anterior (NUP 50001234567) já analisou a matéria e deferiu o benefício"
+- "Já existe decisão administrativa favorável sem apresentação de novos elementos"
+- "PAD anterior julgou pela manutenção, não havendo fatos novos que justifiquem nova análise"
 
 3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
 
