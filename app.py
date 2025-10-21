@@ -355,11 +355,22 @@ Escolha um dos seguintes rótulos:
 - E o achado do TCU JÁ INCLUI filho ("Apenas 1 filho", "Mais de 1 filho", "Filho + CadÚnico", "Filho + endereço")
 
 ⚠️ IMPORTANTE - Argumentos 6 e 9 têm prevalência ABSOLUTA:
-- **Argumento 6** ("Decisão judicial transitada em julgado"): Procure por QUALQUER menção a:
-  * decisão judicial, sentença, acórdão, trânsito em julgado
-  * "decisões judiciais anteriores"
-  * "respaldado por decisão judicial"
-  * "já existe decisão favorável"
+- **Argumento 6** ("Decisão judicial transitada em julgado"):
+  🚨 ATENÇÃO: Use SOMENTE se a decisão judicial for DO CASO CONCRETO da pensionista (não jurisprudência genérica)
+
+  ✅ USE Argumento 6 quando mencionar:
+  * "existe sentença/acórdão no processo da interessada"
+  * "decisão judicial favorável à pensionista" (com número de processo)
+  * "já existe decisão transitada em julgado do caso da Sra. [nome]"
+  * "processo judicial da requerente julgado pela manutenção"
+  * qualquer decisão judicial QUE JULGOU O CASO ESPECÍFICO desta pensionista
+
+  ❌ NÃO USE Argumento 6 para:
+  * "jurisprudência do TRF/STF/STJ sobre união estável"
+  * "decisões judiciais sobre o tema filha maior solteira"
+  * "entendimento dos tribunais sobre..."
+  * citação de precedentes ou súmulas genéricas
+  * qualquer decisão que NÃO seja do caso concreto da pensionista
 
 - **Argumento 9** ("Processo administrativo anterior sem novos elementos"): Procure por QUALQUER menção a:
   * processo administrativo anterior, PAD anterior, NUP anterior
@@ -378,10 +389,21 @@ Escolha um dos seguintes rótulos:
   * "depoimento de...", "atestado por..."
   * qualquer prova testemunhal juntada aos autos
 
-⚠️ EXEMPLO IMPORTANTE:
+⚠️ EXEMPLOS PRÁTICOS - Argumento 6:
+
+❌ NÃO é Argumento 6 (apenas jurisprudência genérica):
+- "O TRF4 já decidiu que união estável não descaracteriza filha solteira"
+- "Segundo entendimento do STF, a jurisprudência..."
+- "Há decisões judiciais favoráveis sobre o tema"
+
+✅ SIM é Argumento 6 (decisão DO CASO CONCRETO):
+- "A manutenção da pensão é respaldada por decisão judicial transitada em julgado no processo 1234567-89.2020.4.04.1234"
+- "Existe sentença favorável à interessada no processo da Sra. Maria"
+- "Decisão judicial do caso concreto já julgou pela manutenção do benefício"
+
+⚠️ EXEMPLO - Argumento 9:
 Se o texto disser "A manutenção da pensão é respaldada por decisões judiciais e administrativas anteriores", você DEVE identificar:
-- Argumento 6 (decisões judiciais)
-- Argumento 9 (decisões administrativas anteriores)
+- Argumento 6 (se mencionar decisão judicial DO CASO) OU Argumento 9 (se mencionar processo administrativo anterior DO CASO)
 
 3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
 
