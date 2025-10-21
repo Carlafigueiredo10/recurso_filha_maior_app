@@ -936,6 +936,11 @@ img[alt="robo"], .logo-robo-pulse {
     background: #fff5e6 !important;
     border-left: 4px solid #f59e0b !important;
     border-radius: 10px !important;
+    color: #000000 !important;
+}
+
+.stWarning * {
+    color: #000000 !important;
 }
 
 .stError {
