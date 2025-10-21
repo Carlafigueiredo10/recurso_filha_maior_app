@@ -1200,7 +1200,7 @@ if extrato_file and defesa_file:
         st.markdown("### 3️⃣ Dados da Pensionista")
 
     # 🚨 AVISO PARA O ANALISTA
-    st.warning("🚨 **ATENÇÃO:** Não esqueça de alterar o **ITEM 1** da Nota Técnica no SEI com estes dados!")
+    st.error("🚨 **ATENÇÃO:** Não esqueça de alterar o **ITEM 1** da Nota Técnica no SEI com estes dados!")
 
     with col_copy3:
         nome = dados_identificacao.get("nome", "Não identificado")
@@ -1439,7 +1439,7 @@ if extrato_file and defesa_file:
         st.markdown("### 7️⃣ Defesa Prévia")
 
     # 🚨 AVISO PARA O ANALISTA
-    st.warning("🚨 **ATENÇÃO:** NÃO ESQUEÇA DE ALTERAR O **ITEM 3** DA NOTA TÉCNICA PADRÃO!")
+    st.error("🚨 **ATENÇÃO:** NÃO ESQUEÇA DE ALTERAR O **ITEM 3** DA NOTA TÉCNICA PADRÃO!")
 
     col_radio1, col_radio2 = st.columns([2, 8])
     with col_radio1:
