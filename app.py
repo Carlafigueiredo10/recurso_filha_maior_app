@@ -347,8 +347,24 @@ Escolha um dos seguintes rótulos:
 - E o achado do TCU JÁ INCLUI filho ("Apenas 1 filho", "Mais de 1 filho", "Filho + CadÚnico", "Filho + endereço")
 
 ⚠️ IMPORTANTE - Argumentos 6 e 9 têm prevalência ABSOLUTA:
-- **Argumento 6** ("Decisão judicial transitada em julgado"): Procure por menções a decisões judiciais, sentenças, acórdãos com trânsito em julgado
-- **Argumento 9** ("Processo administrativo anterior sem novos elementos"): Procure por menções a processos administrativos anteriores (geralmente começam com "5000"), PAD, NUP, processo julgado pela manutenção do benefício
+- **Argumento 6** ("Decisão judicial transitada em julgado"): Procure por QUALQUER menção a:
+  * decisão judicial, sentença, acórdão, trânsito em julgado
+  * "decisões judiciais anteriores"
+  * "respaldado por decisão judicial"
+  * "já existe decisão favorável"
+
+- **Argumento 9** ("Processo administrativo anterior sem novos elementos"): Procure por QUALQUER menção a:
+  * processo administrativo anterior, PAD anterior, NUP anterior
+  * "decisões administrativas anteriores"
+  * processos que começam com "5000"
+  * "já foi julgado administrativamente"
+  * "processo administrativo julgado pela manutenção"
+  * "respaldado por decisões administrativas"
+
+⚠️ EXEMPLO IMPORTANTE:
+Se o texto disser "A manutenção da pensão é respaldada por decisões judiciais e administrativas anteriores", você DEVE identificar:
+- Argumento 6 (decisões judiciais)
+- Argumento 9 (decisões administrativas anteriores)
 
 3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
 
