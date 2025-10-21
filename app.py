@@ -1144,6 +1144,10 @@ if extrato_file and defesa_file:
     col_header3, col_copy3 = st.columns([9, 1])
     with col_header3:
         st.markdown("### 3️⃣ Dados da Pensionista")
+
+    # 🚨 AVISO PARA O ANALISTA
+    st.warning("🚨 **ATENÇÃO:** Não esqueça de alterar o **ITEM 1** da Nota Técnica no SEI com estes dados!")
+
     with col_copy3:
         nome = dados_identificacao.get("nome", "Não identificado")
         cpf = dados_identificacao.get("cpf", "Não identificado")
@@ -1254,6 +1258,9 @@ if extrato_file and defesa_file:
     with col_header7:
         st.markdown("### 7️⃣ Defesa Prévia")
 
+    # 🚨 AVISO PARA O ANALISTA
+    st.warning("🚨 **ATENÇÃO:** NÃO ESQUEÇA DE ALTERAR O **ITEM 3** DA NOTA TÉCNICA PADRÃO!")
+
     col_radio1, col_radio2 = st.columns([2, 8])
     with col_radio1:
         defesa_previa = st.radio(
@@ -1292,6 +1299,9 @@ if extrato_file and defesa_file:
             <div style="color: #333333; margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">{s2}</div>
         </div>
         """, unsafe_allow_html=True)
+
+        # 🚨 AVISO MODELO SEI PROCEDENTE
+        st.info("📋 **MODELO SEI:** Use o modelo **54053871** (Recurso PROCEDENTE)")
     else:
         st.markdown(f"""
         <div style="background: #ffe6e6; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #E52207; box-shadow: 0 2px 8px rgba(229,34,7,0.15);">
@@ -1299,6 +1309,9 @@ if extrato_file and defesa_file:
             <div style="color: #333333; margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">{s2}</div>
         </div>
         """, unsafe_allow_html=True)
+
+        # 🚨 AVISO MODELO SEI IMPROCEDENTE
+        st.info("📋 **MODELO SEI:** Use o modelo **53937770** (Recurso IMPROCEDENTE)")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
