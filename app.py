@@ -522,7 +522,19 @@ def analisar_com_matriz(achado, argumentos):
 
     # Mensagem mostra se achado foi recalculado
     info_recalculo = f"\n⚠️ Achado recalculado: {achado} → {achado_recalculado} (defesa revelou mais provas)" if achado != achado_recalculado else ""
-    saida2 = f"improcedente argumentos ({', '.join(improc)})\nprocedente argumentos ({', '.join(proc)}){info_recalculo}"
+
+    # Converter números em textos descritivos
+    improc_textos = [ARG_MAP.get(num, f"Argumento {num}") for num in improc]
+    proc_textos = [ARG_MAP.get(num, f"Argumento {num}") for num in proc]
+
+    # Montar mensagens descritivas
+    msg_improc = f"improcedente por: {', '.join(improc_textos)}" if improc_textos else ""
+    msg_proc = f"procedente por: {', '.join(proc_textos)}" if proc_textos else ""
+
+    # Combinar mensagens
+    mensagens = [m for m in [msg_improc, msg_proc] if m]
+    saida2 = '\n'.join(mensagens) + info_recalculo
+
     return saida1, saida2
 
 # --------- Gerar corpo do ofício ---------
