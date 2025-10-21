@@ -174,11 +174,11 @@ ARG_MAP = {
     "3": "Mais de um filho em comum não caracteriza",
     "4": "Endereço distinto",
     "5": "Erro em bases cadastrais",
-    "6": "Coisa julgada judicial",
+    "6": "Decisão judicial transitada em julgado",
     "7": "Dissolução da união estável",
     "8": "Ameaça de judicialização",
-    "9": "Recebimento de pensão do INSS não descaracteriza",
-    "10": "Testemunhos de terceiros",
+    "9": "Processo administrativo anterior sem novos elementos",
+    "10": "Testemunho de terceiros",
     "11": "Inconsistência no CadÚnico",
     "12": "Defesa admite filho em comum"
 }
@@ -346,6 +346,10 @@ Escolha um dos seguintes rótulos:
 - "filho não comprova união"
 - E o achado do TCU JÁ INCLUI filho ("Apenas 1 filho", "Mais de 1 filho", "Filho + CadÚnico", "Filho + endereço")
 
+⚠️ IMPORTANTE - Argumentos 6 e 9 têm prevalência ABSOLUTA:
+- **Argumento 6** ("Decisão judicial transitada em julgado"): Procure por menções a decisões judiciais, sentenças, acórdãos com trânsito em julgado
+- **Argumento 9** ("Processo administrativo anterior sem novos elementos"): Procure por menções a processos administrativos anteriores (geralmente começam com "5000"), PAD, NUP, processo julgado pela manutenção do benefício
+
 3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
 
 ### Formato de saída
@@ -486,8 +490,8 @@ def analisar_com_matriz(achado, argumentos):
             res = regra["resultado"].iloc[0]
             (improc if res == "improcedente" else proc).append(num)
 
-    # decisão judicial (6) prevalece
-    if "6" in argumentos:
+    # Argumentos com prevalência absoluta (sempre procedente)
+    if "6" in argumentos or "9" in argumentos:
         saida1 = "procedente"
     else:
         saida1 = "improcedente" if len(improc) >= len(proc) else "procedente"
