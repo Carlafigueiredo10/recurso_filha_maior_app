@@ -1276,6 +1276,23 @@ if extrato_file and defesa_file:
     argumentos = parsed.get("argumentos", [])
     outros = parsed.get("outros", [])
 
+    # 🔹 REGRA DE INFERÊNCIA EMPÍRICA DECIPEX — CadÚnico implica coabitação (endereço comum)
+    # Regra empírica DECIPEX — CadÚnico implica coabitação:
+    # Conforme o comportamento do Cadastro Único (CadÚnico),
+    # ao se declarar "companheiro(a)", o sistema exige endereço comum.
+    # Logo, a mera existência de registro de companheiro(a) no CadÚnico
+    # já traduz coabitação declarada pela própria interessada.
+    # A reclassificação de "Apenas CadÚnico" para "CadÚnico + Endereço em múltiplas bases"
+    # é empiricamente validada e não constitui criação de prova nova,
+    # apenas explicitação de fato já presente no ato declaratório.
+
+    if achado.lower() == "apenas cadúnico":
+        # Se defesa admitiu filho (Arg 2 ou 12), reforça vínculo conjugal com prole comum
+        if any(a in argumentos for a in ["2", "12"]):
+            achado = "Filho + CadÚnico"
+        else:
+            achado = "CadÚnico + Endereço em múltiplas bases"
+
     # 🔹 REGRA DE INFERÊNCIA EMPÍRICA DECIPEX — Reclassificação de achado por pluralidade de filhos
     # Regra inferida a partir de comportamento empírico das defesas:
     # O TCU frequentemente identifica apenas um filho, mas a defesa pode revelar a existência de outros
