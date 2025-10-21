@@ -606,159 +606,403 @@ def get_logo_base64():
 
 # ------------------ INTERFACE ------------------
 
-# CSS Customizado - Tema Cyberpunk
+# CSS Customizado - Tema Institucional Moderno MGI/ENAP/TCU
 st.markdown("""
 <style>
-/* Importar fonte futurista */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+/* Importar fonte Inter (moderna e institucional) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Background escuro */
+/* ====== LAYOUT GERAL ====== */
 .stApp {
-    background: linear-gradient(135deg, #0a0e27 0%, #1a1d2e 100%);
+    background-color: #ffffff !important;
+    font-family: 'Inter', sans-serif;
+    color: #1f1f1f;
 }
 
-/* Título principal com robô */
+/* ============================================================
+   LAYOUT FLUIDO — ESTILO GOV.BR / ENAP / MGI
+   Expande horizontalmente, mas mantém limite de leitura.
+   ============================================================ */
+
+/* 🔹 Expande o container principal */
+.block-container {
+    max-width: 1200px !important;   /* largura máxima */
+    width: 100% !important;         /* ocupa toda a área disponível */
+    margin: 0 auto !important;      /* centraliza no meio da tela */
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+    transition: all 0.3s ease-in-out;
+}
+
+/* 🔹 Remove restrições de largura herdadas em seções internas */
+section[data-testid="stVerticalBlock"],
+section[data-testid="stHorizontalBlock"] {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* 🔹 Margens verticais mais equilibradas */
+.main .block-container {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* 🔹 Remove espaçamentos verticais excessivos do Streamlit */
+div.block-container {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* 🔹 Reduz margens entre seções */
+div[data-testid="stVerticalBlock"] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* 🔹 Reduz espaços entre colunas */
+div[data-testid="stHorizontalBlock"] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* 🔹 Remove margens extras entre botões e containers */
+button, .stButton {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* 🔹 Upload boxes e cards em proporção uniforme */
+[data-testid="stHorizontalBlock"] > div {
+    flex: 1 1 48% !important;
+}
+
+/* ====== TIPOGRAFIA ====== */
 h1 {
-    font-family: 'Orbitron', sans-serif !important;
-    color: #00d9ff !important;
-    text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
-    letter-spacing: 3px;
-    font-weight: 900 !important;
-    margin-bottom: 30px !important;
-}
-
-/* Headers das seções */
-h2, h3 {
-    font-family: 'Orbitron', sans-serif !important;
-    color: #00d9ff !important;
-    text-shadow: 0 0 3px rgba(0, 217, 255, 0.3);
-    letter-spacing: 2px;
-}
-
-/* Logo do robô */
-.logo-robo {
-    width: 80px;
-    height: 80px;
-    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.4));
-    margin-right: 20px;
-    vertical-align: middle;
-}
-
-/* Cards das seções */
-.element-container {
-    background: rgba(26, 29, 36, 0.6);
-    border: 1px solid rgba(0, 217, 255, 0.3);
-    border-radius: 10px;
-    padding: 15px;
-    margin: 10px 0;
-    box-shadow: 0 0 15px rgba(0, 217, 255, 0.1);
-}
-
-/* Botões */
-.stButton button {
-    background: linear-gradient(135deg, #00d9ff 0%, #0066cc 100%) !important;
-    color: #0a0e27 !important;
-    font-family: 'Orbitron', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #1e3a8a !important;
     font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+}
+
+h2, h3 {
+    font-family: 'Inter', sans-serif !important;
+    color: #1e3a8a !important;
+    font-weight: 700 !important;
+}
+
+h2::before {
+    content: '' !important;
+}
+
+/* ====== LOGO DO ROBÔ ====== */
+img[alt="robo"], .logo-robo-pulse {
+    width: 120px !important;
+    height: auto !important;
+    mix-blend-mode: multiply !important;
+    background: none !important;
+    opacity: 0.95;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+/* ====== CABEÇALHO ====== */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 25px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-right {
+    display: flex;
+    gap: 10px;
+}
+
+/* ====== CARDS ====== */
+.element-container {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+    padding: 15px !important;
+}
+
+/* ====== BOTÕES ====== */
+.stButton button {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
+    color: white !important;
     border: none !important;
-    border-radius: 25px !important;
-    padding: 10px 30px !important;
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.5) !important;
-    transition: all 0.3s ease !important;
-    letter-spacing: 1px !important;
+    border-radius: 8px !important;
+    padding: 8px 18px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s ease-in-out !important;
 }
 
 .stButton button:hover {
-    box-shadow: 0 0 30px rgba(0, 217, 255, 0.8) !important;
-    transform: translateY(-2px) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
 }
 
-/* Botões do topo - altura reduzida */
 .stButton button[kind="secondary"] {
-    padding: 6px 20px !important;
-    font-size: 14px !important;
-    height: 35px !important;
+    background: #ffffff !important;
+    color: #1e3a8a !important;
+    border: 2px solid #1e3a8a !important;
 }
 
-/* Inputs */
-.stTextInput input, .stTextArea textarea {
-    background: rgba(26, 29, 36, 0.8) !important;
-    border: 1px solid #00d9ff !important;
+.stButton button[kind="secondary"]:hover {
+    background: #eef2ff !important;
+}
+
+.stDownloadButton button {
+    background: linear-gradient(135deg, #168821 0%, #1a9b28 100%) !important;
     color: #ffffff !important;
+}
+
+/* ====== UPLOAD BOXES ====== */
+[data-testid="stFileUploader"] {
+    border: 2px dashed #2563eb !important;
+    border-radius: 10px !important;
+    background-color: #ffffff !important;
+    min-height: 160px !important;
+    text-align: center !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    position: relative;
+    padding: 30px !important;
+}
+
+[data-testid="stFileUploader"]:hover {
+    background-color: #f0f4ff !important;
+}
+
+[data-testid="column"]:nth-child(1) [data-testid="stFileUploader"]::before {
+    content: "📄 Insira o PDF do Extrato (TCU) aqui";
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    color: #1e3a8a;
+    font-weight: 600;
+}
+
+[data-testid="column"]:nth-child(2) [data-testid="stFileUploader"]::before {
+    content: "📑 Insira o PDF do Recurso da Pensionista aqui";
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    color: #1e3a8a;
+    font-weight: 600;
+}
+
+/* ====== INPUTS ====== */
+.stTextInput input, .stTextArea textarea {
+    background: #ffffff !important;
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 8px !important;
+}
+
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* ====== ALERTAS ====== */
+.stInfo {
+    background: #eef2ff !important;
+    border-left: 4px solid #2563eb !important;
     border-radius: 10px !important;
 }
 
-/* Info boxes */
-.stInfo {
-    background: rgba(0, 217, 255, 0.1) !important;
-    border-left: 4px solid #00d9ff !important;
-}
-
-/* Success boxes */
 .stSuccess {
-    background: rgba(0, 255, 136, 0.1) !important;
-    border-left: 4px solid #00ff88 !important;
+    background: #e6f7e6 !important;
+    border-left: 4px solid #168821 !important;
+    border-radius: 10px !important;
 }
 
-/* Error boxes */
+.stWarning {
+    background: #fff5e6 !important;
+    border-left: 4px solid #f59e0b !important;
+    border-radius: 10px !important;
+}
+
 .stError {
-    background: rgba(255, 68, 68, 0.1) !important;
-    border-left: 4px solid #ff4444 !important;
+    background: #fee2e2 !important;
+    border-left: 4px solid #E52207 !important;
+    border-radius: 10px !important;
 }
 
-/* Sidebar */
+/* ====== SIDEBAR ====== */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0a0e27 0%, #1a1d2e 100%);
-    border-right: 2px solid rgba(0, 217, 255, 0.3);
+    background: #f0f4ff !important;
+    border-right: 1px solid #d1d5db !important;
 }
 
-/* Divider */
-hr {
-    border-color: rgba(0, 217, 255, 0.3) !important;
+[data-testid="stSidebar"] h2 {
+    color: #1e3a8a !important;
+    border-bottom: 2px solid #2563eb !important;
 }
 
-/* Números das seções com glow */
-h2::before {
-    content: '▸ ';
-    color: #00d9ff;
-    text-shadow: 0 0 10px #00d9ff;
+/* ====== MÉTRICAS ====== */
+[data-testid="stMetric"] {
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 10px !important;
 }
 
-/* Logo do robô - sombra estática */
-.logo-robo-pulse {
-    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.6));
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+    color: #1e3a8a !important;
+    font-weight: 700 !important;
+}
+
+/* ====== EXPANDER ====== */
+.streamlit-expanderHeader {
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 10px !important;
+}
+
+.streamlit-expanderHeader:hover {
+    background: #eef2ff !important;
+    border-color: #2563eb !important;
+}
+
+/* ====== AJUSTES ESPECÍFICOS HEADER ====== */
+/* Botões compactos no topo */
+div[data-testid="column"] button[kind="secondary"] {
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
+    height: 32px !important;
+    white-space: nowrap !important;
+}
+
+/* ====== RESPONSIVIDADE ====== */
+
+/* 🔹 Ajusta responsividade (tablet) */
+@media (max-width: 1024px) {
+    .block-container {
+        max-width: 95% !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
+
+/* 🔹 Ajusta responsividade (mobile) */
+@media (max-width: 768px) {
+    .block-container {
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Cards empilham verticalmente */
+    [data-testid="stHorizontalBlock"] > div {
+        flex: 1 1 100% !important;
+    }
+
+    /* Título e robô reduzem */
+    img[alt="robo"] {
+        width: 90px !important;
+    }
+
+    h1 {
+        font-size: 1.6em !important;
+    }
+
+    .stButton button {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Título com logo do robô
+# =========================
+# CABEÇALHO FINAL — VERSÃO INSTITUCIONAL AJUSTADA
+# =========================
 logo_base64 = get_logo_base64()
 
-if logo_base64:
+# Faixa institucional superior
+st.markdown("""
+<div style="
+    background:#1e3a8a;
+    color:#ffffff;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    letter-spacing:0.5px;
+    padding:6px 18px;
+    border-radius:6px 6px 0 0;
+    text-align:left;
+    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+">
+    DECIPEX — Coordenação-Geral de Risco e Controle
+</div>
+""", unsafe_allow_html=True)
+
+# CSS para estilização dos botões na terceira coluna
+st.markdown("""
+<style>
+/* 🔹 Alinha botões à direita, com proporção harmoniosa */
+div[data-testid="column"]:nth-child(3) .stButton > button {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}
+div[data-testid="column"]:nth-child(3) .stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* 🔹 Remove padding desnecessário do topo */
+div[data-testid="stHorizontalBlock"] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Cabeçalho com botões integrados (layout 3 colunas)
+col_logo, col_titulo, col_botoes = st.columns([1.2, 4, 2])
+
+with col_logo:
     st.markdown(f"""
-    <div style="display: flex; align-items: center; margin-bottom: 30px; gap: 20px;">
-        <img class="logo-robo-pulse" src="data:image/png;base64,{logo_base64}" style="width: 180px;">
-        <div>
-            <h1 style="margin: 0; padding: 0; font-size: 3.5em; line-height: 1;">ANALISADOR DE RECURSOS</h1>
-            <p style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-size: 18px; margin: 10px 0 0 0; padding: 0; letter-spacing: 3px;">
-                Filha Maior Solteira
-            </p>
-        </div>
-    </div>
+    <img src="data:image/png;base64,{logo_base64}" alt="robo" class="logo-robo-pulse"
+         style="width:120px; height:auto; margin-top:10px;">
     """, unsafe_allow_html=True)
-else:
+
+with col_titulo:
     st.markdown("""
-    <h1 style="margin: 0; padding: 0;">🤖 ANALISADOR DE RECURSOS</h1>
-    <p style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-size: 18px; letter-spacing: 3px;">
-        Filha Maior Solteira
+    <h1 style="margin:0; font-size:2em; color:#1e3a8a; font-weight:700; line-height:1.2; margin-top:15px;">
+        Analisador de Recursos
+    </h1>
+    <p style="margin:3px 0 0 0; color:#6b7280; font-size:0.9rem; font-weight:500;">
+        Pensão por Morte — Filha Maior Solteira
     </p>
     """, unsafe_allow_html=True)
 
-# Botões logo abaixo do título, ocupando largura total
-col_btn1, col_btn2 = st.columns(2)
-
-with col_btn1:
-    if st.button("🧠 Processar Feedbacks", help="Analisa feedbacks do B2 e gera insights", type="secondary", disabled=not B2_CONFIGURED, use_container_width=True):
+with col_botoes:
+    # Botão Processar
+    if st.button("🧠 Processar", help="Analisa feedbacks do B2 e gera insights", type="secondary", disabled=not B2_CONFIGURED, use_container_width=True, key="btn_processar"):
         with st.spinner("🔄 Processando feedbacks do B2..."):
             resultado = processar_feedbacks_para_aprendizado()
 
@@ -805,8 +1049,8 @@ with col_btn1:
                         with st.expander(f"Exemplo {i}: {ex['achado']} → {ex['decisao']}"):
                             st.text(ex['corpo_oficio'])
 
-with col_btn2:
-    if st.button("🔄 Reiniciar", help="Limpar tudo e recomeçar", type="secondary", use_container_width=True):
+    # Botão Limpar
+    if st.button("🔄 Limpar", help="Limpar tudo e recomeçar", type="secondary", use_container_width=True, key="btn_reiniciar"):
         # Limpar session_state
         for key in list(st.session_state.keys()):
             del st.session_state[key]
@@ -863,25 +1107,25 @@ if extrato_file and defesa_file:
     col_nome, col_cpf, col_codigo = st.columns(3)
     with col_nome:
         st.markdown(f"""
-        <div style="background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
-            <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">NOME</div>
-            <div style="color: #1f1f1f; font-size: 14px; margin-top: 5px; font-weight: 500;">{nome}</div>
+        <div style="background: #ffffff; padding: 1rem; border-radius: 10px; border-left: 4px solid #2563eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; border-left: 4px solid #2563eb;">
+            <div style="color: #2563eb; font-size: 0.75rem; font-family: 'Inter', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Nome</div>
+            <div style="color: #1f2937; font-size: 0.9rem; margin-top: 0.5rem; font-weight: 500; line-height: 1.4;">{nome}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_cpf:
         st.markdown(f"""
-        <div style="background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
-            <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">CPF</div>
-            <div style="color: #1f1f1f; font-size: 14px; margin-top: 5px; font-weight: 500;">{cpf}</div>
+        <div style="background: #ffffff; padding: 1rem; border-radius: 10px; border-left: 4px solid #2563eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; border-left: 4px solid #2563eb;">
+            <div style="color: #2563eb; font-size: 0.75rem; font-family: 'Inter', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">CPF</div>
+            <div style="color: #1f2937; font-size: 0.9rem; margin-top: 0.5rem; font-weight: 500;">{cpf}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_codigo:
         st.markdown(f"""
-        <div style="background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 5px; border-left: 3px solid #00d9ff;">
-            <div style="color: #00d9ff; font-size: 12px; font-family: 'Orbitron', sans-serif;">CÓDIGO INDÍCIO</div>
-            <div style="color: #1f1f1f; font-size: 14px; margin-top: 5px; font-weight: 500;">{codigo}</div>
+        <div style="background: #ffffff; padding: 1rem; border-radius: 10px; border-left: 4px solid #2563eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; border-left: 4px solid #2563eb;">
+            <div style="color: #2563eb; font-size: 0.75rem; font-family: 'Inter', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Código Indício</div>
+            <div style="color: #1f2937; font-size: 0.9rem; margin-top: 0.5rem; font-weight: 500;">{codigo}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -899,7 +1143,7 @@ if extrato_file and defesa_file:
 
     if descricao_indicio:
         st.markdown(f"""
-        <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; border: 1px solid rgba(0, 217, 255, 0.3);">
+        <div style="background: #ffffff; padding: 1.25rem; border-radius: 10px; color: #1f2937; font-weight: 400; line-height: 1.7; border: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05); font-size: 0.95rem;">
         {descricao_indicio}
         </div>
         """, unsafe_allow_html=True)
@@ -934,9 +1178,9 @@ if extrato_file and defesa_file:
     st.session_state.achado_atual = achado
 
     st.markdown(f"""
-    <div style="background: rgba(0, 217, 255, 0.15); padding: 15px; border-radius: 5px; border-left: 4px solid #00d9ff;">
-        <span style="color: #00d9ff; font-family: 'Orbitron', sans-serif; font-weight: 600;">📊 Achado classificado:</span>
-        <span style="color: #ffffff; font-size: 16px; margin-left: 10px;">{achado}</span>
+    <div style="background: #eef2ff; padding: 1rem 1.25rem; border-radius: 10px; border-left: 4px solid #2563eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <span style="color: #1e3a8a; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.9rem;">📊 Achado classificado:</span>
+        <span style="color: #1f2937; font-size: 1rem; margin-left: 0.5rem; font-weight: 600;">{achado}</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -949,7 +1193,7 @@ if extrato_file and defesa_file:
         alegacoes_recurso = extrair_alegacoes_recurso(texto_defesa)
 
     st.markdown(f"""
-    <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; white-space: pre-wrap; border: 1px solid rgba(0, 217, 255, 0.3);">
+    <div style="background: #ffffff; padding: 1.25rem; border-radius: 10px; color: #1f2937; font-weight: 400; line-height: 1.7; white-space: pre-wrap; border: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05); font-size: 0.95rem;">
     {alegacoes_recurso}
     </div>
     """, unsafe_allow_html=True)
@@ -980,7 +1224,7 @@ if extrato_file and defesa_file:
             st.code(texto_defesa_previa, language=None)
 
     st.markdown(f"""
-    <div style="background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 5px; color: #1f1f1f; font-weight: 500; line-height: 1.8; border: 1px solid rgba(0, 217, 255, 0.3);">
+    <div style="background: #ffffff; padding: 1.25rem; border-radius: 10px; color: #1f2937; font-weight: 400; line-height: 1.7; border: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(0,0,0,0.05); font-size: 0.95rem;">
     {texto_defesa_previa}
     </div>
     """, unsafe_allow_html=True)
@@ -994,16 +1238,16 @@ if extrato_file and defesa_file:
 
     if s1 == "procedente":
         st.markdown(f"""
-        <div style="background: rgba(34, 197, 94, 0.2); padding: 20px; border-radius: 8px; border-left: 5px solid #22c55e;">
-            <div style="color: #22c55e; font-size: 24px; font-family: 'Orbitron', sans-serif; font-weight: 700;">✅ RECURSO PROCEDENTE</div>
-            <div style="color: #ffffff; margin-top: 10px; font-size: 14px;">{s2}</div>
+        <div style="background: #e6f7e6; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #168821; box-shadow: 0 2px 8px rgba(22,136,33,0.15);">
+            <div style="color: #168821; font-size: 1.4rem; font-family: 'Inter', sans-serif; font-weight: 700;">✅ RECURSO PROCEDENTE</div>
+            <div style="color: #333333; margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">{s2}</div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
-        <div style="background: rgba(239, 68, 68, 0.2); padding: 20px; border-radius: 8px; border-left: 5px solid #ef4444;">
-            <div style="color: #ef4444; font-size: 24px; font-family: 'Orbitron', sans-serif; font-weight: 700;">❌ RECURSO IMPROCEDENTE</div>
-            <div style="color: #ffffff; margin-top: 10px; font-size: 14px;">{s2}</div>
+        <div style="background: #ffe6e6; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #E52207; box-shadow: 0 2px 8px rgba(229,34,7,0.15);">
+            <div style="color: #E52207; font-size: 1.4rem; font-family: 'Inter', sans-serif; font-weight: 700;">❌ RECURSO IMPROCEDENTE</div>
+            <div style="color: #333333; margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">{s2}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1276,3 +1520,21 @@ if 'corpo_oficio' in st.session_state:
                 if st.button("Cancelar", key="cancelar_comentario", use_container_width=True):
                     st.session_state.mostrar_comentario = False
                     st.rerun()
+
+# ==============================
+# 🔹 Rodapé Institucional DECIPEX
+# ==============================
+st.markdown("""
+<hr style="margin-top:40px; margin-bottom:10px; border: none; border-top: 1px solid #e5e7eb;">
+<div style="
+    background-color:#f3f4f6;
+    color:#4b5563;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    text-align:center;
+    padding:10px 0;
+    border-top:1px solid #e5e7eb;
+">
+    © 2025 — <strong>DECIPEX / MGI</strong> | Desenvolvido pela <strong>Coordenação-Geral de Risco e Controle (CGRIS)</strong>
+</div>
+""", unsafe_allow_html=True)
