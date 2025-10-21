@@ -2,6 +2,7 @@ import pdfplumber
 import pandas as pd
 import streamlit as st
 import json
+import re
 from pathlib import Path
 from openai import OpenAI
 import boto3
@@ -356,21 +357,27 @@ Escolha um dos seguintes rótulos:
 
 ⚠️ IMPORTANTE - Argumentos 6 e 9 têm prevalência ABSOLUTA:
 - **Argumento 6** ("Decisão judicial transitada em julgado"):
-  🚨 ATENÇÃO: Use SOMENTE se a decisão judicial for DO CASO CONCRETO da pensionista (não jurisprudência genérica)
+  🚨 ATENÇÃO CRÍTICA: Use APENAS se o texto contiver PROVAS LITERAIS de decisão DO CASO CONCRETO
 
-  ✅ USE Argumento 6 quando mencionar:
-  * "existe sentença/acórdão no processo da interessada"
-  * "decisão judicial favorável à pensionista" (com número de processo)
-  * "já existe decisão transitada em julgado do caso da Sra. [nome]"
-  * "processo judicial da requerente julgado pela manutenção"
-  * qualquer decisão judicial QUE JULGOU O CASO ESPECÍFICO desta pensionista
+  ✅ PALAVRAS-CHAVE OBRIGATÓRIAS (deve ter pelo menos UMA destas):
+  * Número de processo no formato CNJ: "0000000-00.0000.0.00.0000" ou "processo nº", "autos nº"
+  * "decisão judicial favorável à interessada" + número do processo
+  * "sentença transitada em julgado" + referência ao caso específico
+  * "acórdão transitado em julgado" + número de processo
+  * "decisão judicial do caso da Sra. [nome da pensionista]"
+  * "sentença proferida nos autos de" + número do processo
+  * "processo judicial da requerente" + número identificador
+  * "decisão com trânsito em julgado" + menção específica ao caso
 
-  ❌ NÃO USE Argumento 6 para:
-  * "jurisprudência do TRF/STF/STJ sobre união estável"
-  * "decisões judiciais sobre o tema filha maior solteira"
-  * "entendimento dos tribunais sobre..."
-  * citação de precedentes ou súmulas genéricas
-  * qualquer decisão que NÃO seja do caso concreto da pensionista
+  ❌ NÃO USE Argumento 6 se encontrar APENAS:
+  * "jurisprudência", "entendimento dos tribunais", "precedente judicial"
+  * "decisão do STF/STJ/TRF sobre o tema"
+  * "súmula", "acórdão paradigma", "tese jurídica"
+  * citações genéricas de casos de terceiros
+  * menção a "decisões judiciais" SEM número de processo específico
+  * referências a "jurisprudência dominante" ou "entendimento consolidado"
+
+  🔴 REGRA DE OURO: Se não há número de processo identificado E não menciona explicitamente "o caso da interessada/pensionista", NÃO é Argumento 6!
 
 - **Argumento 9** ("Processo administrativo anterior sem novos elementos"):
   🚨 ATENÇÃO: Use quando a defesa mencionar que O CASO JÁ FOI JULGADO ADMINISTRATIVAMENTE antes
@@ -1268,6 +1275,47 @@ if extrato_file and defesa_file:
     achado = parsed.get("achado", "Achado não classificado")
     argumentos = parsed.get("argumentos", [])
     outros = parsed.get("outros", [])
+
+    # 🔹 VALIDAÇÃO PÓS-GPT: Filtros programáticos para reduzir falsos-positivos
+    argumentos_validados = []
+
+    for arg in argumentos:
+        incluir_argumento = True
+
+        # 🔹 Validação Argumento 6 (decisão judicial do caso concreto)
+        if arg == "6":
+            # Verifica se há número de processo no formato CNJ ou menção a "transitado em julgado"
+            tem_numero_processo = bool(re.search(r'\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}', texto_defesa))
+            tem_transito = bool(re.search(r'trânsit|transitad', texto_defesa, re.IGNORECASE))
+            tem_processo_especifico = re.search(r'(processo|autos)\s+(n[º°]|número)', texto_defesa, re.IGNORECASE)
+
+            # Se não tem número de processo E não menciona trânsito em julgado E não menciona processo específico
+            if not tem_numero_processo and not tem_transito and not tem_processo_especifico:
+                incluir_argumento = False
+
+            # Filtro adicional: se menciona "jurisprudência" sem número de processo, provavelmente é falso-positivo
+            tem_jurisprudencia = re.search(r'(jurisprudência|precedente|súmula|entendimento\s+dos?\s+tribunal)', texto_defesa, re.IGNORECASE)
+            if tem_jurisprudencia and not tem_numero_processo:
+                incluir_argumento = False
+
+        # 🔹 Validação Argumento 9 (processo administrativo anterior)
+        elif arg == "9":
+            # Garante que há termos administrativos explícitos
+            tem_termos_admin = bool(re.search(
+                r'(NUP|processo\s+administrativo|Nota\s+Técnica|PAD|já\s+foi\s+(analisado|avaliado|auditado|julgado)|decisão\s+administrativa\s+anterior)',
+                texto_defesa,
+                re.IGNORECASE
+            ))
+
+            if not tem_termos_admin:
+                incluir_argumento = False
+
+        # Se passou nas validações, incluir o argumento
+        if incluir_argumento:
+            argumentos_validados.append(arg)
+
+    # Substituir lista de argumentos pela lista validada
+    argumentos = argumentos_validados
 
     # Salvar achado no session_state para usar no feedback
     st.session_state.achado_atual = achado
