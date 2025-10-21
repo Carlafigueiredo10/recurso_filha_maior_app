@@ -4,11 +4,13 @@ Apenas 1 filho,Testemunho de terceiros,procedente
 Apenas 1 filho,Erro em bases cadastrais,procedente
 Apenas 1 filho,Nenhum argumento apresentado,procedente
 Apenas 1 filho,Confirma endereço em comum,improcedente
-Apenas CadÚnico,Negativa de união estável,procedente
-Apenas CadÚnico,Testemunho de terceiros,procedente
+Apenas CadÚnico,Negativa de união estável,improcedente
+Apenas CadÚnico,Testemunho de terceiros,improcedente
 Apenas CadÚnico,Erro cadastral comprovado,procedente
 Apenas CadÚnico,Nenhum argumento apresentado,procedente
 Apenas CadÚnico,Defesa admite filho em comum,improcedente
+Apenas CadÚnico,Decisão judicial transitada em julgado,procedente
+Apenas CadÚnico,Processo administrativo anterior sem novos elementos,procedente
 Filho + endereço,Negativa de união estável,improcedente
 Filho + endereço,Testemunho de terceiros,improcedente
 Filho + endereço,Erro em bases cadastrais sem prova idônea,procedente
