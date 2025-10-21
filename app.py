@@ -369,6 +369,15 @@ Escolha um dos seguintes rótulos:
   * "processo administrativo julgado pela manutenção"
   * "respaldado por decisões administrativas"
 
+⚠️ IMPORTANTE - Argumento 10 ("Testemunho de terceiros"):
+- **Argumento 10**: Procure por QUALQUER menção a:
+  * declarações de terceiros, testemunhas, depoimentos
+  * cartas de vizinhos, amigos, familiares
+  * declarações escritas, atas notariais
+  * "fulano declarou que...", "segundo testemunha..."
+  * "depoimento de...", "atestado por..."
+  * qualquer prova testemunhal juntada aos autos
+
 ⚠️ EXEMPLO IMPORTANTE:
 Se o texto disser "A manutenção da pensão é respaldada por decisões judiciais e administrativas anteriores", você DEVE identificar:
 - Argumento 6 (decisões judiciais)
