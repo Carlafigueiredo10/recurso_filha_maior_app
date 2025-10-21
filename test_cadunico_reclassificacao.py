@@ -21,24 +21,31 @@ import re
 # Configuração para UTF-8 no Windows
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-def simular_reclassificacao_cadunico(achado_original, argumentos):
+def simular_reclassificacao_cadunico(achado_original, argumentos, texto_defesa=""):
     """
-    Simula a regra de reclassificação CadÚnico implementada no app.py (linhas 1279-1294)
+    Simula a regra de reclassificação CadÚnico implementada no app.py (linhas 1294-1305)
 
     Args:
         achado_original: String com o achado classificado pelo GPT
         argumentos: Lista de strings com os argumentos identificados
+        texto_defesa: String com o texto da defesa (para validar menção literal a filho)
 
     Returns:
         String com o achado reclassificado (ou original se não houver mudança)
     """
     achado = achado_original
 
-    if achado.lower() == "apenas cadúnico":
-        # Se defesa admitiu filho (Arg 2 ou 12), reforça vínculo conjugal com prole comum
-        if any(a in argumentos for a in ["2", "12"]):
+    if achado.strip().lower() in ["apenas cadúnico", "apenas cadunico"]:
+        texto_limpo = texto_defesa.lower()
+
+        # Verifica se há menção literal a filho(s)
+        menciona_filho = re.search(r'\bfilh[oa]s?\b', texto_limpo)
+
+        # Se defesa admite filho (Arg 2 ou 12) *e* menciona "filho" literalmente → Filho + CadÚnico
+        if any(a in argumentos for a in ["2", "12"]) and menciona_filho:
             achado = "Filho + CadÚnico"
         else:
+            # Caso contrário, entende-se coabitação implícita → CadÚnico + Endereço em múltiplas bases
             achado = "CadÚnico + Endereço em múltiplas bases"
 
     return achado
@@ -64,34 +71,36 @@ def teste_cadunico_sem_filho():
 def teste_cadunico_com_filho_arg2():
     """
     Testa reclassificação: Apenas CadÚnico → Filho + CadÚnico
-    (quando defesa admite filho via Argumento 2)
+    (quando defesa admite filho via Argumento 2 E menciona "filho" no texto)
     """
     achado = "Apenas CadÚnico"
     argumentos = ["2", "1"]  # Arg 2 = Defesa admite filho em comum
+    texto_defesa = "A existência de filho em comum não caracteriza união estável"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos)
+    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
     assert resultado == "Filho + CadÚnico", \
         f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
 
-    print("✅ PASSOU: CadÚnico + Arg 2 (filho admitido) → Filho + CadÚnico")
+    print("✅ PASSOU: CadÚnico + Arg 2 + menção a 'filho' → Filho + CadÚnico")
     return True
 
 
 def teste_cadunico_com_filho_arg12():
     """
     Testa reclassificação: Apenas CadÚnico → Filho + CadÚnico
-    (quando defesa admite filho via Argumento 12)
+    (quando defesa admite filho via Argumento 12 E menciona "filho" no texto)
     """
     achado = "Apenas CadÚnico"
     argumentos = ["12"]  # Arg 12 = Filho em comum sem guarda compartilhada
+    texto_defesa = "O filho não mora comigo desde que nasceu"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos)
+    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
     assert resultado == "Filho + CadÚnico", \
         f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
 
-    print("✅ PASSOU: CadÚnico + Arg 12 (filho) → Filho + CadÚnico")
+    print("✅ PASSOU: CadÚnico + Arg 12 + menção a 'filho' → Filho + CadÚnico")
     return True
 
 
@@ -101,13 +110,14 @@ def teste_cadunico_com_ambos_args_filho():
     """
     achado = "Apenas CadÚnico"
     argumentos = ["2", "12", "1"]
+    texto_defesa = "Minha filha mora com o pai desde pequena"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos)
+    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
     assert resultado == "Filho + CadÚnico", \
         f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
 
-    print("✅ PASSOU: CadÚnico + Args 2 e 12 → Filho + CadÚnico")
+    print("✅ PASSOU: CadÚnico + Args 2 e 12 + menção a 'filha' → Filho + CadÚnico")
     return True
 
 
@@ -152,6 +162,42 @@ def teste_case_insensitive():
     return True
 
 
+def teste_falso_positivo_arg2_sem_mencao_filho():
+    """
+    🚨 TESTE CRÍTICO: Valida correção do falso positivo
+    Quando GPT marca Arg 2 indevidamente mas texto NÃO menciona filho
+    """
+    achado = "Apenas CadÚnico"
+    argumentos = ["2", "1"]  # Arg 2 marcado pelo GPT (pode ser erro)
+    texto_defesa = "Nunca tive união estável. Erro no cadastro."  # SEM menção a filho
+
+    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+
+    # Deve reclassificar para CadÚnico + Endereço, NÃO para Filho + CadÚnico
+    assert resultado == "CadÚnico + Endereço em múltiplas bases", \
+        f"❌ FALSO POSITIVO! Esperado 'CadÚnico + Endereço', obtido '{resultado}'"
+
+    print("✅ PASSOU: Arg 2 SEM menção textual a filho → CadÚnico + Endereço (evitou falso positivo)")
+    return True
+
+
+def teste_verdadeiro_positivo_arg2_com_mencao_filho():
+    """
+    Valida que Arg 2 + menção textual a filho → Filho + CadÚnico
+    """
+    achado = "Apenas CadÚnico"
+    argumentos = ["2"]
+    texto_defesa = "Meu filho não mora comigo"
+
+    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+
+    assert resultado == "Filho + CadÚnico", \
+        f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
+
+    print("✅ PASSOU: Arg 2 COM menção textual a filho → Filho + CadÚnico")
+    return True
+
+
 def teste_justificativa_empirica():
     """
     Testa se a regra está alinhada com a base empírica DECIPEX
@@ -164,7 +210,11 @@ def teste_justificativa_empirica():
     print("")
     print("Reclassificações aplicadas:")
     print("  1. Apenas CadÚnico (sem filho) → CadÚnico + Endereço em múltiplas bases")
-    print("  2. Apenas CadÚnico + filho admitido → Filho + CadÚnico")
+    print("  2. Apenas CadÚnico + filho admitido + menção textual → Filho + CadÚnico")
+    print("")
+    print("🔒 Proteção contra falsos positivos:")
+    print("  • Valida menção LITERAL a 'filho/filha/filhos/filhas' no texto")
+    print("  • Evita reclassificação quando GPT marca Arg 2/12 indevidamente")
     print("")
     print("Risco jurídico: ZERO")
     print("  • Não cria prova nova, apenas explicita fato já presente no CadÚnico")
@@ -186,6 +236,8 @@ def executar_todos_testes():
         teste_cadunico_com_filho_arg2,
         teste_cadunico_com_filho_arg12,
         teste_cadunico_com_ambos_args_filho,
+        teste_falso_positivo_arg2_sem_mencao_filho,  # 🚨 TESTE CRÍTICO
+        teste_verdadeiro_positivo_arg2_com_mencao_filho,
         teste_nao_reclassifica_outros_achados,
         teste_case_insensitive,
         teste_justificativa_empirica,

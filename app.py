@@ -1291,11 +1291,17 @@ if extrato_file and defesa_file:
     # é empiricamente validada e não constitui criação de prova nova,
     # apenas explicitação de fato já presente no ato declaratório.
 
-    if achado.lower() == "apenas cadúnico":
-        # Se defesa admitiu filho (Arg 2 ou 12), reforça vínculo conjugal com prole comum
-        if any(a in argumentos for a in ["2", "12"]):
+    if achado.strip().lower() in ["apenas cadúnico", "apenas cadunico"]:
+        texto_limpo = texto_defesa.lower()
+
+        # Verifica se há menção literal a filho(s)
+        menciona_filho = re.search(r'\bfilh[oa]s?\b', texto_limpo)
+
+        # Se defesa admite filho (Arg 2 ou 12) *e* menciona "filho" literalmente → Filho + CadÚnico
+        if any(a in argumentos for a in ["2", "12"]) and menciona_filho:
             achado = "Filho + CadÚnico"
         else:
+            # Caso contrário, entende-se coabitação implícita → CadÚnico + Endereço em múltiplas bases
             achado = "CadÚnico + Endereço em múltiplas bases"
 
     # 🔹 REGRA DE INFERÊNCIA EMPÍRICA DECIPEX — Reclassificação de achado por pluralidade de filhos
