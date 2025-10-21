@@ -1276,6 +1276,58 @@ if extrato_file and defesa_file:
     argumentos = parsed.get("argumentos", [])
     outros = parsed.get("outros", [])
 
+    # 🔹 REGRA DE INFERÊNCIA EMPÍRICA DECIPEX — Reclassificação de achado por pluralidade de filhos
+    # Regra inferida a partir de comportamento empírico das defesas:
+    # O TCU frequentemente identifica apenas um filho, mas a defesa pode revelar a existência de outros
+    # (por meio de expressões plurais, múltiplas certidões ou nomes de filhos distintos).
+    # Quando detectada pluralidade de filhos no texto da defesa, o achado deve ser reclassificado de
+    # "Apenas 1 filho" para "Mais de 1 filho", pois há elevação do grau probatório de vínculo familiar.
+    # Essa regra é segura, pois reflete fato novo trazido pela própria interessada, sem criar prova inexistente.
+
+    if achado.lower() == "apenas 1 filho":
+        texto_limpo = texto_defesa.lower()
+
+        # Expressões típicas de pluralidade de filhos
+        indicadores_plural = [
+            # Plural explícito
+            r'\bmeus\s+filhos\b',
+            r'\bminhas\s+filhas\b',
+            r'\bdois\s+filhos?\b',
+            r'\bduas\s+filhas?\b',
+            r'\btrês\s+filhos?\b',
+            r'\bquatro\s+filhos?\b',
+            r'\bvários\s+filhos?\b',
+            r'\bdiversos\s+filhos?\b',
+            r'\bambos\s+os\s+filhos?\b',
+            r'\btodos\s+os\s+filhos?\b',
+            r'\bos\s+dois\s+filhos?\b',
+            r'\bas\s+duas\s+filhas?\b',
+
+            # Múltiplas certidões
+            r'certid(ão|ões)\s+de\s+nascimento.*\s+(e|,).*certid(ão|ões)',
+            r'certid(ões|oes)\s+de\s+nascimento',
+
+            # Nomes próprios múltiplos (João e Maria, João, Maria e Pedro)
+            r'\b([A-Z][a-záàâãéèêíïóôõöúçñ]+)\s+(e|,)\s+([A-Z][a-záàâãéèêíïóôõöúçñ]+)',
+
+            # Plural implícito (palavra "filhos" sem ser "filho em comum")
+            r'\bfilhos\b(?!\s+em\s+comum)',
+        ]
+
+        # Filtro de segurança: negações explícitas de pluralidade
+        negacoes_pluralidade = [
+            r'\bapenas\s+um\s+filho\b',
+            r'\bsomente\s+um\s+filho\b',
+            r'\bsó\s+um\s+filho\b',
+            r'\bum\s+único\s+filho\b',
+        ]
+
+        menciona_varios_filhos = any(re.search(p, texto_limpo) for p in indicadores_plural)
+        nega_pluralidade = any(re.search(p, texto_limpo) for p in negacoes_pluralidade)
+
+        if menciona_varios_filhos and not nega_pluralidade:
+            achado = "Mais de 1 filho"
+
     # 🔹 VALIDAÇÃO PÓS-GPT: Filtros programáticos para reduzir falsos-positivos
     argumentos_validados = []
 
