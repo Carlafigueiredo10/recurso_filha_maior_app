@@ -544,7 +544,8 @@ def analisar_com_matriz(achado, argumentos):
     mensagens = [m for m in [msg_improc, msg_proc] if m]
     saida2 = '\n'.join(mensagens) + info_recalculo
 
-    return saida1, saida2
+    # Retornar também as listas de argumentos filtrados
+    return saida1, saida2, improc, proc
 
 # --------- Gerar corpo do ofício ---------
 def gerar_corpo_oficio(decisao, achado, argumentos, outros, alegacoes, texto_defesa_previa, dados_identificacao, descricao_indicio):
@@ -1290,7 +1291,7 @@ if extrato_file and defesa_file:
     # 8. Decisão
     st.markdown("### 8️⃣ Decisão")
 
-    s1, s2 = analisar_com_matriz(achado, argumentos)
+    s1, s2, args_improc, args_proc = analisar_com_matriz(achado, argumentos)
 
     if s1 == "procedente":
         st.markdown(f"""
@@ -1348,11 +1349,15 @@ if extrato_file and defesa_file:
         if st.button("🚀 Gerar Corpo do Ofício", type="primary", key="gerar_oficio", use_container_width=True):
             # Usar session_state para armazenar o ofício gerado
             with st.spinner("Gerando ofício..."):
-                # Gerar ofício com análise dos argumentos
+                # Filtrar argumentos conforme decisão
+                # Se procedente, usar apenas args procedentes; se improcedente, usar apenas args improcedentes
+                args_filtrados = args_proc if s1 == "procedente" else args_improc
+
+                # Gerar ofício com análise dos argumentos FILTRADOS
                 st.session_state.corpo_oficio = gerar_corpo_oficio(
                     decisao=s1,
                     achado=achado,
-                    argumentos=argumentos,
+                    argumentos=args_filtrados,
                     outros=outros,
                     alegacoes=alegacoes_recurso,
                     texto_defesa_previa=texto_defesa_previa,
