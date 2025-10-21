@@ -23,7 +23,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def simular_reclassificacao_cadunico(achado_original, argumentos, texto_defesa=""):
     """
-    Simula a regra de reclassificação CadÚnico implementada no app.py (linhas 1294-1305)
+    Simula a regra de reclassificação CadÚnico implementada no app.py (linhas 1298-1310)
 
     Args:
         achado_original: String com o achado classificado pelo GPT
@@ -31,24 +31,24 @@ def simular_reclassificacao_cadunico(achado_original, argumentos, texto_defesa="
         texto_defesa: String com o texto da defesa (para validar menção literal a filho)
 
     Returns:
-        String com o achado reclassificado (ou original se não houver mudança)
+        Tupla (achado_reclassificado, tem_filho_defesa)
     """
     achado = achado_original
+    tem_filho_defesa = False
 
     if achado.strip().lower() in ["apenas cadúnico", "apenas cadunico"]:
+        # Simplificação: CadÚnico SEMPRE implica coabitação (endereço)
+        achado = "CadÚnico + Endereço em múltiplas bases"
+
+        # Detectar menção a filho para sinalizar na decisão
         texto_limpo = texto_defesa.lower()
+        menciona_filho_literal = bool(re.search(r'\bfilh[oa]s?\b', texto_limpo))
 
-        # Verifica se há menção literal a filho(s)
-        menciona_filho = re.search(r'\bfilh[oa]s?\b', texto_limpo)
+        # Flag só ativada se houver menção LITERAL (proteção contra falso positivo do GPT)
+        if menciona_filho_literal:
+            tem_filho_defesa = True
 
-        # Se defesa admite filho (Arg 2 ou 12) *e* menciona "filho" literalmente → Filho + CadÚnico
-        if any(a in argumentos for a in ["2", "12"]) and menciona_filho:
-            achado = "Filho + CadÚnico"
-        else:
-            # Caso contrário, entende-se coabitação implícita → CadÚnico + Endereço em múltiplas bases
-            achado = "CadÚnico + Endereço em múltiplas bases"
-
-    return achado
+    return achado, tem_filho_defesa
 
 
 def teste_cadunico_sem_filho():
@@ -59,10 +59,12 @@ def teste_cadunico_sem_filho():
     achado = "Apenas CadÚnico"
     argumentos = ["1"]  # Arg 1 = Negativa de união estável
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos)
+    resultado, tem_filho = simular_reclassificacao_cadunico(achado, argumentos)
 
     assert resultado == "CadÚnico + Endereço em múltiplas bases", \
         f"❌ Esperado 'CadÚnico + Endereço em múltiplas bases', obtido '{resultado}'"
+    assert tem_filho == False, \
+        f"❌ Flag tem_filho deveria ser False, obtido {tem_filho}"
 
     print("✅ PASSOU: CadÚnico sem filho → CadÚnico + Endereço em múltiplas bases")
     return True
@@ -70,37 +72,41 @@ def teste_cadunico_sem_filho():
 
 def teste_cadunico_com_filho_arg2():
     """
-    Testa reclassificação: Apenas CadÚnico → Filho + CadÚnico
+    Testa reclassificação: Apenas CadÚnico → CadÚnico + Endereço + flag filho=True
     (quando defesa admite filho via Argumento 2 E menciona "filho" no texto)
     """
     achado = "Apenas CadÚnico"
     argumentos = ["2", "1"]  # Arg 2 = Defesa admite filho em comum
     texto_defesa = "A existência de filho em comum não caracteriza união estável"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+    resultado, tem_filho = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
-    assert resultado == "Filho + CadÚnico", \
-        f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
+    assert resultado == "CadÚnico + Endereço em múltiplas bases", \
+        f"❌ Esperado 'CadÚnico + Endereço em múltiplas bases', obtido '{resultado}'"
+    assert tem_filho == True, \
+        f"❌ Flag tem_filho deveria ser True, obtido {tem_filho}"
 
-    print("✅ PASSOU: CadÚnico + Arg 2 + menção a 'filho' → Filho + CadÚnico")
+    print("✅ PASSOU: CadÚnico + Arg 2 + menção a 'filho' → CadÚnico + Endereço (flag filho=True)")
     return True
 
 
 def teste_cadunico_com_filho_arg12():
     """
-    Testa reclassificação: Apenas CadÚnico → Filho + CadÚnico
+    Testa reclassificação: Apenas CadÚnico → CadÚnico + Endereço + flag filho=True
     (quando defesa admite filho via Argumento 12 E menciona "filho" no texto)
     """
     achado = "Apenas CadÚnico"
     argumentos = ["12"]  # Arg 12 = Filho em comum sem guarda compartilhada
     texto_defesa = "O filho não mora comigo desde que nasceu"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+    resultado, tem_filho = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
-    assert resultado == "Filho + CadÚnico", \
-        f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
+    assert resultado == "CadÚnico + Endereço em múltiplas bases", \
+        f"❌ Esperado 'CadÚnico + Endereço em múltiplas bases', obtido '{resultado}'"
+    assert tem_filho == True, \
+        f"❌ Flag tem_filho deveria ser True, obtido {tem_filho}"
 
-    print("✅ PASSOU: CadÚnico + Arg 12 + menção a 'filho' → Filho + CadÚnico")
+    print("✅ PASSOU: CadÚnico + Arg 12 + menção a 'filho' → CadÚnico + Endereço (flag filho=True)")
     return True
 
 
@@ -112,12 +118,14 @@ def teste_cadunico_com_ambos_args_filho():
     argumentos = ["2", "12", "1"]
     texto_defesa = "Minha filha mora com o pai desde pequena"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+    resultado, tem_filho = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
-    assert resultado == "Filho + CadÚnico", \
-        f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
+    assert resultado == "CadÚnico + Endereço em múltiplas bases", \
+        f"❌ Esperado 'CadÚnico + Endereço em múltiplas bases', obtido '{resultado}'"
+    assert tem_filho == True, \
+        f"❌ Flag tem_filho deveria ser True, obtido {tem_filho}"
 
-    print("✅ PASSOU: CadÚnico + Args 2 e 12 + menção a 'filha' → Filho + CadÚnico")
+    print("✅ PASSOU: CadÚnico + Args 2 e 12 + menção a 'filha' → CadÚnico + Endereço (flag filho=True)")
     return True
 
 
@@ -129,12 +137,12 @@ def teste_nao_reclassifica_outros_achados():
         ("Apenas 1 filho", ["1"]),
         ("Filho + endereço", ["1"]),
         ("Mais de 1 filho", ["1"]),
-        ("Filho + CadÚnico", ["1"]),  # Já é o achado correto
-        ("CadÚnico + Endereço em múltiplas bases", ["1"]),  # Já é o achado correto
+        ("Filho + CadÚnico", ["1"]),
+        ("CadÚnico + Endereço em múltiplas bases", ["1"]),
     ]
 
     for achado_original, args in casos:
-        resultado = simular_reclassificacao_cadunico(achado_original, args)
+        resultado, tem_filho = simular_reclassificacao_cadunico(achado_original, args)
         assert resultado == achado_original, \
             f"❌ Achado '{achado_original}' foi indevidamente alterado para '{resultado}'"
 
@@ -154,7 +162,7 @@ def teste_case_insensitive():
     ]
 
     for achado in variantes:
-        resultado = simular_reclassificacao_cadunico(achado, ["1"])
+        resultado, tem_filho = simular_reclassificacao_cadunico(achado, ["1"])
         assert resultado == "CadÚnico + Endereço em múltiplas bases", \
             f"❌ Variante '{achado}' não foi reclassificada corretamente: '{resultado}'"
 
@@ -171,30 +179,34 @@ def teste_falso_positivo_arg2_sem_mencao_filho():
     argumentos = ["2", "1"]  # Arg 2 marcado pelo GPT (pode ser erro)
     texto_defesa = "Nunca tive união estável. Erro no cadastro."  # SEM menção a filho
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+    resultado, tem_filho = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
-    # Deve reclassificar para CadÚnico + Endereço, NÃO para Filho + CadÚnico
+    # Deve reclassificar para CadÚnico + Endereço, mas flag filho=False
     assert resultado == "CadÚnico + Endereço em múltiplas bases", \
         f"❌ FALSO POSITIVO! Esperado 'CadÚnico + Endereço', obtido '{resultado}'"
+    assert tem_filho == False, \
+        f"❌ Flag tem_filho deveria ser False (sem menção textual), obtido {tem_filho}"
 
-    print("✅ PASSOU: Arg 2 SEM menção textual a filho → CadÚnico + Endereço (evitou falso positivo)")
+    print("✅ PASSOU: Arg 2 SEM menção textual a filho → CadÚnico + Endereço, flag filho=False")
     return True
 
 
 def teste_verdadeiro_positivo_arg2_com_mencao_filho():
     """
-    Valida que Arg 2 + menção textual a filho → Filho + CadÚnico
+    Valida que Arg 2 + menção textual a filho → CadÚnico + Endereço + flag filho=True
     """
     achado = "Apenas CadÚnico"
     argumentos = ["2"]
     texto_defesa = "Meu filho não mora comigo"
 
-    resultado = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
+    resultado, tem_filho = simular_reclassificacao_cadunico(achado, argumentos, texto_defesa)
 
-    assert resultado == "Filho + CadÚnico", \
-        f"❌ Esperado 'Filho + CadÚnico', obtido '{resultado}'"
+    assert resultado == "CadÚnico + Endereço em múltiplas bases", \
+        f"❌ Esperado 'CadÚnico + Endereço em múltiplas bases', obtido '{resultado}'"
+    assert tem_filho == True, \
+        f"❌ Flag tem_filho deveria ser True, obtido {tem_filho}"
 
-    print("✅ PASSOU: Arg 2 COM menção textual a filho → Filho + CadÚnico")
+    print("✅ PASSOU: Arg 2 COM menção textual a filho → CadÚnico + Endereço, flag filho=True")
     return True
 
 
@@ -202,19 +214,25 @@ def teste_justificativa_empirica():
     """
     Testa se a regra está alinhada com a base empírica DECIPEX
     """
-    print("\n📊 JUSTIFICATIVA EMPÍRICA E JURÍDICA:")
+    print("\n📊 JUSTIFICATIVA EMPÍRICA E JURÍDICA (v2.2.0):")
     print("━" * 80)
     print("Base jurídica:")
     print("  • CadÚnico exige endereço comum para declaração de companheiro(a)")
     print("  • Logo, 'Apenas CadÚnico' implica coabitação declarada pela interessada")
     print("")
-    print("Reclassificações aplicadas:")
-    print("  1. Apenas CadÚnico (sem filho) → CadÚnico + Endereço em múltiplas bases")
-    print("  2. Apenas CadÚnico + filho admitido + menção textual → Filho + CadÚnico")
+    print("Reclassificação aplicada:")
+    print("  1. Apenas CadÚnico → SEMPRE reclassifica para 'CadÚnico + Endereço'")
+    print("  2. Flag tem_filho_defesa armazenada quando defesa menciona filho")
+    print("")
+    print("🔹 Inovação v2.2.0:")
+    print("  • Achado unificado: 'CadÚnico + Endereço em múltiplas bases'")
+    print("  • Menção a filho não altera achado, apenas flag para mensagem de decisão")
+    print("  • Mensagem de decisão mostra: 'improcedente por: [Args] + CadÚnico + Endereço'")
+    print("  • Se flag filho=True, adiciona: '+ Filho em comum'")
     print("")
     print("🔒 Proteção contra falsos positivos:")
     print("  • Valida menção LITERAL a 'filho/filha/filhos/filhas' no texto")
-    print("  • Evita reclassificação quando GPT marca Arg 2/12 indevidamente")
+    print("  • Flag só ativada se menção textual explícita (ignora Args 2/12 sem confirmação textual)")
     print("")
     print("Risco jurídico: ZERO")
     print("  • Não cria prova nova, apenas explicita fato já presente no CadÚnico")

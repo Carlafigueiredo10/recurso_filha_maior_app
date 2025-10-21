@@ -584,8 +584,24 @@ def analisar_com_matriz(achado, argumentos):
     improc_textos = [ARG_MAP.get(num, f"Argumento {num}") for num in improc]
     proc_textos = [ARG_MAP.get(num, f"Argumento {num}") for num in proc]
 
-    # Montar mensagens descritivas
-    msg_improc = f"improcedente por: {', '.join(improc_textos)}" if improc_textos else ""
+    # 🔹 PARTE 2: Adicionar achados complementares à mensagem de decisão
+    achados_complementares = []
+
+    # Se achado contém CadÚnico, adiciona "CadÚnico + Endereço"
+    if "cadúnico" in achado_recalculado.lower() or "cadunico" in achado_recalculado.lower():
+        achados_complementares.append("CadÚnico + Endereço")
+
+    # Se achado é Filho + Endereço, adiciona explicitamente
+    if "filho" in achado_recalculado.lower() and "endereço" in achado_recalculado.lower():
+        achados_complementares.append("Filho + Endereço")
+
+    # Se defesa mencionou filho (flag armazenada), adiciona "Filho em comum"
+    if st.session_state.get("tem_filho_defesa", False):
+        achados_complementares.append("Filho em comum")
+
+    # Montar mensagens descritivas com achados complementares
+    partes_improc = improc_textos + achados_complementares
+    msg_improc = f"improcedente por: {', '.join(partes_improc)}" if partes_improc else ""
     msg_proc = f"procedente por: {', '.join(proc_textos)}" if proc_textos else ""
 
     # Combinar mensagens
@@ -1296,17 +1312,19 @@ if extrato_file and defesa_file:
     # apenas explicitação de fato já presente no ato declaratório.
 
     if achado.strip().lower() in ["apenas cadúnico", "apenas cadunico"]:
+        # Simplificação: CadÚnico SEMPRE implica coabitação (endereço)
+        # A menção a filho é armazenada como flag para enriquecer mensagem de decisão
+        achado = "CadÚnico + Endereço em múltiplas bases"
+
+        # Detectar menção a filho para sinalizar na decisão
         texto_limpo = texto_defesa.lower()
+        menciona_filho_literal = bool(re.search(r'\bfilh[oa]s?\b', texto_limpo))
 
-        # Verifica se há menção literal a filho(s)
-        menciona_filho = re.search(r'\bfilh[oa]s?\b', texto_limpo)
-
-        # Se defesa admite filho (Arg 2 ou 12) *e* menciona "filho" literalmente → Filho + CadÚnico
-        if any(a in argumentos for a in ["2", "12"]) and menciona_filho:
-            achado = "Filho + CadÚnico"
+        # Flag só ativada se houver menção LITERAL (proteção contra falso positivo do GPT)
+        if menciona_filho_literal:
+            st.session_state.tem_filho_defesa = True
         else:
-            # Caso contrário, entende-se coabitação implícita → CadÚnico + Endereço em múltiplas bases
-            achado = "CadÚnico + Endereço em múltiplas bases"
+            st.session_state.tem_filho_defesa = False
 
     # 🔹 REGRA DE INFERÊNCIA EMPÍRICA DECIPEX — Reclassificação de achado por pluralidade de filhos
     # Regra inferida a partir de comportamento empírico das defesas:
