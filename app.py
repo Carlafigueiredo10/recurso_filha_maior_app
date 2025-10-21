@@ -331,6 +331,14 @@ REGRAS DE CLASSIFICAÇÃO:
 Escolha um dos seguintes rótulos:
 
 2. Identifique quais argumentos da defesa correspondem aos seguintes códigos e descrições:
+
+🚨 REGRA CRÍTICA - NÃO OMITA ARGUMENTOS:
+- Você DEVE analisar TODO o texto da defesa do início ao fim
+- Liste TODOS os argumentos encontrados, mesmo que sejam muitos (10, 15, 20 argumentos)
+- NÃO resuma, NÃO simplifique, NÃO omita alegações
+- Se a requerente apresentou 20 alegações, você DEVE listar todas as 20
+- Cada alegação distinta deve ser identificada e classificada
+- A quantidade de argumentos NÃO tem limite - liste quantos forem necessários
 {ARG_MAP}
 
 ⚠️ IMPORTANTE - Diferenciar CONFISSÃO vs NEGAÇÃO de filho:
