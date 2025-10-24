@@ -181,7 +181,8 @@ ARG_MAP = {
     "9": "Processo administrativo anterior sem novos elementos",
     "10": "Testemunho de terceiros",
     "11": "Inconsistência no CadÚnico",
-    "12": "Defesa admite filho em comum"
+    "12": "Defesa admite filho em comum",
+    "13": "Citação genérica de MS 34.677/STF (medida cautelar)"
 }
 
 # carregar matriz
@@ -446,7 +447,20 @@ Escolha um dos seguintes rótulos:
 - "Já existe decisão administrativa favorável sem apresentação de novos elementos"
 - "PAD anterior julgou pela manutenção, não havendo fatos novos que justifiquem nova análise"
 
-3. Se existirem argumentos adicionais que não se enquadram nos 12 códigos acima, liste-os em "outros".
+⚠️ ATENÇÃO CRÍTICA - Argumento 13 ("MS 34.677/STF"):
+- **Argumento 13**: Use SOMENTE quando a defesa mencionar o Mandado de Segurança 34.677 do STF
+- 🚨 PALAVRAS-CHAVE OBRIGATÓRIAS (precisa ter pelo menos UMA):
+  * "Mandado de Segurança 34677", "MS 34677", "MS 34.677"
+  * "decisão do STF que suspendeu o Acórdão 2.780/2016"
+  * "medida cautelar do STF", "liminar do STF"
+- ⚠️ IMPORTANTE: Use Arg 13 APENAS se a menção for GENÉRICA (sem número de processo individual da interessada)
+- ❌ NÃO use Arg 13 se houver número de processo individual da interessada ou menção a trânsito em julgado DO SEU CASO
+- ✅ Exemplos de uso correto:
+  * "O MS 34.677 do STF suspendeu o Acórdão 2.780/2016 do TCU"
+  * "A medida cautelar do STF no MS 34677 garante a manutenção"
+  * "Decisão do STF no Mandado de Segurança 34677"
+
+3. Se existirem argumentos adicionais que não se enquadram nos 13 códigos acima, liste-os em "outros".
 
 ### Formato de saída
 Responda apenas com JSON válido, sem explicações, sem Markdown, no seguinte formato:
@@ -592,7 +606,7 @@ def analisar_com_matriz(achado, argumentos):
             (improc if res == "improcedente" else proc).append(num)
 
     # Argumentos com prevalência absoluta (sempre procedente)
-    if "6" in argumentos or "9" in argumentos:
+    if "6" in argumentos or "9" in argumentos or "13" in argumentos:
         saida1 = "procedente"
     else:
         saida1 = "improcedente" if len(improc) >= len(proc) else "procedente"
@@ -1450,6 +1464,32 @@ if extrato_file and defesa_file:
             # Se detectar negação, NÃO incluir argumentos de filho
             if any(re.search(p, texto_limpo) for p in negacoes_filho):
                 incluir_argumento = False
+
+        # 🔹 Validação Argumento 13 (MS 34.677/STF)
+        elif arg == "13":
+            # Verifica se realmente menciona o MS 34.677
+            texto_limpo = texto_defesa.lower()
+
+            # Padrões de menção ao MS 34677
+            mencoes_ms = [
+                r'ms\s*34\.?677',
+                r'mandado\s+de\s+segurança\s*34\.?677',
+                r'acórdão\s*2\.?780/2016',
+                r'acordao\s*2\.?780/2016',
+            ]
+
+            tem_mencao_ms = any(re.search(p, texto_limpo) for p in mencoes_ms)
+
+            # Se não menciona realmente o MS, não incluir
+            if not tem_mencao_ms:
+                incluir_argumento = False
+            else:
+                # Se menciona MS 34677 MAS também menciona processo individual da interessada, é Arg 6, não 13
+                tem_processo_individual = bool(re.search(r'\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}', texto_defesa))
+                tem_transito_individual = bool(re.search(r'(trânsit|transitad).*(interessada|requerente|pensionista)', texto_defesa, re.IGNORECASE))
+
+                if tem_processo_individual or tem_transito_individual:
+                    incluir_argumento = False  # É caso individual, deve ser Arg 6
 
         # Se passou nas validações, incluir o argumento
         if incluir_argumento:
