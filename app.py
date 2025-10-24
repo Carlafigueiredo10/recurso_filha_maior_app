@@ -587,10 +587,6 @@ def analisar_com_matriz(achado, argumentos):
     # 🔹 PARTE 2: Adicionar achados complementares à mensagem de decisão
     achados_complementares = []
 
-    # Se achado contém CadÚnico, adiciona "CadÚnico + Endereço"
-    if "cadúnico" in achado_recalculado.lower() or "cadunico" in achado_recalculado.lower():
-        achados_complementares.append("CadÚnico + Endereço")
-
     # Se achado é Filho + Endereço, adiciona explicitamente
     if "filho" in achado_recalculado.lower() and "endereço" in achado_recalculado.lower():
         achados_complementares.append("Filho + Endereço")
@@ -1310,11 +1306,6 @@ if extrato_file and defesa_file:
     # A reclassificação de "Apenas CadÚnico" para "CadÚnico + Endereço em múltiplas bases"
     # é empiricamente validada e não constitui criação de prova nova,
     # apenas explicitação de fato já presente no ato declaratório.
-
-    if achado.strip().lower() in ["apenas cadúnico", "apenas cadunico"]:
-        # Simplificação: CadÚnico SEMPRE implica coabitação (endereço)
-        # A menção a filho é armazenada como flag para enriquecer mensagem de decisão
-        achado = "CadÚnico + Endereço em múltiplas bases"
 
         # Detectar menção a filho para sinalizar na decisão
         texto_limpo = texto_defesa.lower()
