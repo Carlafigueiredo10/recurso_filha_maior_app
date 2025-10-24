@@ -580,6 +580,10 @@ def recalcular_achado(achado_original, argumentos):
 
 # --------- Aplicar matriz ---------
 def analisar_com_matriz(achado, argumentos):
+    # Limpar NUP detectado de análises anteriores
+    if "nup_detectado" in st.session_state:
+        del st.session_state.nup_detectado
+
     # PRIMEIRO: Recalcular achado se defesa revelar mais provas
     achado_recalculado = recalcular_achado(achado, argumentos)
 
@@ -624,7 +628,13 @@ def analisar_com_matriz(achado, argumentos):
 
     # Converter números em textos descritivos
     improc_textos = [ARG_MAP.get(num, f"Argumento {num}") for num in improc]
-    proc_textos = [ARG_MAP.get(num, f"Argumento {num}") for num in proc]
+    proc_textos = []
+    for num in proc:
+        texto_base = ARG_MAP.get(num, f"Argumento {num}")
+        # Se for Argumento 9 e temos NUP detectado, adiciona o número
+        if num == "9" and st.session_state.get("nup_detectado"):
+            texto_base = f"{texto_base} (NUP {st.session_state.nup_detectado})"
+        proc_textos.append(texto_base)
 
     # 🔹 PARTE 2: Adicionar achados complementares à mensagem de decisão
     achados_complementares = []
@@ -1541,22 +1551,27 @@ if extrato_file and defesa_file:
     # Esta é uma regra crítica que SEMPRE deve ser detectada (prevalência absoluta = procedente)
     texto_limpo_admin = texto_defesa.lower()
 
-    # Padrões que indicam processo administrativo anterior
+    # Primeiro: tentar encontrar NUP (sempre começa com 5000)
+    nup_match = re.search(r'(nup|processo\s+administrativo)\s*(n[º°]|número)?\s*:?\s*(5000\d{13,})', texto_defesa, re.IGNORECASE)
+    nup_numero = nup_match.group(3) if nup_match else None
+
+    # Padrões que indicam processo administrativo anterior (mais restritivos)
     mencoes_processo_admin = [
-        r'(nup|processo\s+administrativo)\s*(n[º°]|número)?\s*\d{5,}',
-        r'(nota\s+técnica|decisão\s+administrativa)\s+anterior',
-        r'já\s+(foi|havia\s+sido)\s+(analisad[oa]|avaliad[oa]|auditad[oa]|julgad[oa])',
-        r'processo\s+administrativo\s+anterior',
-        r'(pad|sindicância)\s+(anterior|já\s+analisad[oa])',
-        r'matéria\s+já\s+(analisada|apreciada|julgada)',
-        r'(caso|indício)\s+já\s+(foi|havia)\s+(analisad[oa]|avaliad[oa])',
-        r'decisão\s+administrativa\s+(prévia|anterior|favorável)',
+        r'(nota\s+técnica|decisão\s+administrativa)\s+anterior.*(favorável|deferiu|manteve|procedente)',
+        r'já\s+(foi|havia\s+sido)\s+(analisad[oa]|avaliad[oa]|auditad[oa]|julgad[oa]).*(favorável|deferiu|manteve|procedente)',
+        r'processo\s+administrativo\s+anterior.*(favorável|deferiu|manteve|procedente)',
+        r'matéria\s+já\s+(analisada|apreciada|julgada).*(favorável|sem\s+novos\s+elementos)',
+        r'(caso|indício)\s+já\s+(foi|havia)\s+(analisad[oa]|avaliad[oa]).*(favorável|deferiu)',
     ]
 
-    tem_processo_admin = any(re.search(p, texto_limpo_admin) for p in mencoes_processo_admin)
+    # Se tem NUP começando com 5000, é processo administrativo válido
+    tem_processo_admin = nup_numero is not None or any(re.search(p, texto_limpo_admin) for p in mencoes_processo_admin)
 
     if tem_processo_admin and "9" not in argumentos:
         argumentos.append("9")  # Força inclusão do Arg 9
+        # Salvar número do NUP para exibição posterior
+        if nup_numero:
+            st.session_state.nup_detectado = nup_numero
 
     # 🔹 REGRA DE DETECÇÃO CRÍTICA — Argumento 13 (MS 34.677/STF)
     # Verifica DIRETAMENTE no texto se há menção ao MS 34677, independente do GPT
