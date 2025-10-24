@@ -346,7 +346,8 @@ Escolha um dos seguintes rótulos:
 - **Argumento 2** ("Filho em comum não caracteriza"): quando a defesa ADMITE que existe filho, mas NEGA que isso caracteriza união estável
 - **Argumento 12** ("Defesa admite filho em comum"): USO ESPECÍFICO - Use SOMENTE quando:
   * O achado do TCU classificado é "Apenas CadÚnico" (extrato NÃO menciona filho)
-  * E a defesa REVELA/ADMITE que existe filho em comum
+  * E a defesa REVELA/ADMITE EXPLICITAMENTE que existe filho em comum
+  * 🚨 NUNCA use se a defesa NEGA filho: "não tem filho", "não há filho", "sem filho em comum", "inexiste filho", "nunca tivemos filhos"
   * Isso transforma o caso de prova fraca (só CadÚnico) em prova forte (CadÚnico + Filho revelado pela defesa)
 
 ⚠️ Importante: trate como **Argumento 2** quando mencionar:
@@ -1381,6 +1382,27 @@ if extrato_file and defesa_file:
             ))
 
             if not tem_termos_admin:
+                incluir_argumento = False
+
+        # 🔹 Validação Argumento 2, 3 e 12 (menções a filho)
+        elif arg in ["2", "3", "12"]:
+            # Filtro crítico: NUNCA incluir se a defesa NEGA a existência de filho
+            texto_limpo = texto_defesa.lower()
+
+            # Padrões de negação de filho
+            negacoes_filho = [
+                r'\bnão\s+(tem|há|existe|houve|temos|tivemos)\s+(filho|filhos)',
+                r'\bsem\s+filhos?\s+(em\s+)?comum',
+                r'\binexiste(m)?\s+filhos?',
+                r'\bnão\s+possui(mos)?\s+filhos?',
+                r'\bnunca\s+(tivemos|tiveram|houve)\s+filhos?',
+                r'\bausência\s+de\s+filhos?',
+                r'\bfilhos?\s+inexistente',
+                r'\bnenhum\s+filho',
+            ]
+
+            # Se detectar negação, NÃO incluir argumentos de filho
+            if any(re.search(p, texto_limpo) for p in negacoes_filho):
                 incluir_argumento = False
 
         # Se passou nas validações, incluir o argumento
