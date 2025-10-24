@@ -188,12 +188,26 @@ ARG_MAP = {
 matriz = pd.read_csv("matriz_decisao_revisada_final.csv")
 
 def extrair_texto(pdf_file):
+    """
+    Extrai texto do PDF. Retorna o texto extraído ou None se falhar.
+    """
     texto = ""
-    with pdfplumber.open(pdf_file) as pdf:
-        for p in pdf.pages:
-            if p.extract_text():
-                texto += p.extract_text() + "\n"
-    return texto
+    try:
+        with pdfplumber.open(pdf_file) as pdf:
+            for p in pdf.pages:
+                extracted = p.extract_text()
+                if extracted:
+                    texto += extracted + "\n"
+
+        # Verifica se conseguiu extrair conteúdo significativo
+        texto_limpo = texto.strip()
+        if len(texto_limpo) < 50:  # Menos de 50 caracteres é muito pouco
+            return None
+
+        return texto_limpo
+    except Exception as e:
+        st.error(f"⚠️ Erro ao extrair texto do PDF: {str(e)}")
+        return None
 
 def carregar_template_oficio(decisao):
     """Carrega o template do ofício baseado na decisão (procedente ou improcedente)."""
@@ -453,35 +467,40 @@ Responda apenas com JSON válido, sem explicações, sem Markdown, no seguinte f
 # --------- Extrair alegações do recurso em lista ---------
 def extrair_alegacoes_recurso(texto_defesa):
     """Extrai as alegações/argumentos apresentados no recurso em formato de lista numerada."""
-    prompt = f"""
-Você é um especialista jurídico que analisa recursos administrativos.
 
-Leia o texto do RECURSO abaixo e identifique TODAS as alegações/argumentos apresentados pela pensionista.
+    # Verifica se o texto é válido
+    if not texto_defesa or len(texto_defesa.strip()) < 50:
+        return "⚠️ ERRO: Não foi possível ler o conteúdo da defesa. O PDF pode estar corrompido, protegido ou em formato de imagem."
+
+    prompt = f"""
+Você é um especialista jurídico que analisa recursos administrativos de pensão.
+
+🚨 ATENÇÃO CRÍTICA: Sua tarefa é LER COM MÁXIMA ATENÇÃO e EXTRAIR TODAS as alegações do recurso.
 
 ### Texto do Recurso:
 {texto_defesa}
 
 ### Tarefa:
-Liste todas as alegações em formato numerado simples e direto:
+Leia CUIDADOSAMENTE o texto acima e identifique TODAS as alegações/argumentos apresentados pela pensionista.
 
-1ª alegação - [resumo da alegação em uma linha]
-2ª alegação - [resumo da alegação em uma linha]
-3ª alegação - [resumo da alegação em uma linha]
+**REGRAS OBRIGATÓRIAS:**
+1. Leia o TEXTO COMPLETO com atenção extrema
+2. Identifique e liste TODAS as alegações, mesmo que pareçam secundárias
+3. Inclua TUDO que a pessoa alega: negativas, explicações, provas apresentadas, argumentos jurídicos
+4. Formato: "1ª alegação - [resumo objetivo em uma linha]"
+5. NUNCA retorne "nenhuma alegação" se houver texto para analisar
 
-**Exemplos de alegações comuns:**
-- nunca teve união estável
-- foi apenas um relacionamento casual
-- juntou depoimentos de terceiros
-- erro nas bases cadastrais
-- decisão judicial favorável
-- apresentou certidão de casamento/divórcio
-- etc.
+**Exemplos do que você DEVE identificar:**
+- "Nega união estável" → 1ª alegação - Nega ter mantido união estável
+- "Não tem filho em comum" → 2ª alegação - Afirma inexistência de filho em comum
+- "Cadastro feito por engano" → 3ª alegação - Alega erro cadastral no CadÚnico
+- "Junta certidões" → 4ª alegação - Apresenta documentos comprobatórios
+- "Relacionamento casual" → 5ª alegação - Afirma relação eventual sem coabitação
+- "Testemunhas confirmam" → 6ª alegação - Apresenta depoimentos de terceiros
+- "Erro nas bases" → 7ª alegação - Questiona bases cadastrais do TCU
 
-**IMPORTANTE:**
-- Liste TODAS as alegações encontradas
-- Seja objetivo e conciso (uma linha por alegação)
-- Mantenha a ordem em que aparecem no recurso
-- Se não houver alegações, retorne: "Nenhuma alegação específica identificada"
+🚨 IMPORTANTE: Se o texto contém alguma alegação, defesa ou argumento, você DEVE listar.
+⚠️ Use "Não foi possível identificar alegações específicas no texto fornecido" SOMENTE se o texto for completamente ilegível ou incoerente.
 """
     resp = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1196,6 +1215,16 @@ with col_upload2:
 if extrato_file and defesa_file:
     texto_extrato = extrair_texto(extrato_file)
     texto_defesa = extrair_texto(defesa_file)
+
+    # Validação da extração de texto
+    if not texto_extrato:
+        st.error("❌ **ERRO:** Não foi possível extrair o texto do PDF do Extrato. Verifique se o arquivo não está corrompido, protegido ou em formato de imagem.")
+        st.stop()
+
+    if not texto_defesa:
+        st.error("❌ **ERRO:** Não foi possível extrair o texto do PDF do Recurso. Verifique se o arquivo não está corrompido, protegido ou em formato de imagem.")
+        st.info("💡 **Dica:** Se o PDF foi escaneado (imagem), você precisará usar OCR para converter em texto antes de fazer upload.")
+        st.stop()
 
     # --- Extrair dados de identificação ---
     with st.spinner("🔎 Extraindo dados de identificação..."):
