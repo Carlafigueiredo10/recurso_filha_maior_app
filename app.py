@@ -1508,6 +1508,25 @@ if extrato_file and defesa_file:
         if "4" not in argumentos:
             argumentos.append("4")  # Argumento 4 = "Endereço distinto"
 
+    # 🔹 REGRA DE DETECÇÃO CRÍTICA — Argumento 13 (MS 34.677/STF)
+    # Verifica DIRETAMENTE no texto se há menção ao MS 34677, independente do GPT
+    # Esta é uma regra crítica que SEMPRE deve ser detectada (prevalência absoluta = procedente)
+    texto_limpo_ms = texto_defesa.lower()
+    mencoes_ms_criticas = [
+        r'ms\s*34\.?677',
+        r'mandado\s+de\s+segurança\s*(n[º°]|número)?\s*34\.?677',
+        r'acórdão\s*(n[º°]|número)?\s*2\.?780/2016',
+        r'acordao\s*(n[º°]|número)?\s*2\.?780/2016',
+    ]
+
+    tem_ms34677 = any(re.search(p, texto_limpo_ms) for p in mencoes_ms_criticas)
+
+    if tem_ms34677 and "13" not in argumentos:
+        # Verifica se não é um caso individual (que seria Arg 6)
+        tem_processo_individual = bool(re.search(r'\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}', texto_defesa))
+        if not tem_processo_individual:
+            argumentos.append("13")  # Força inclusão do Arg 13
+
     # Salvar achado no session_state para usar no feedback
     st.session_state.achado_atual = achado
 
