@@ -606,6 +606,14 @@ def analisar_com_matriz(achado, argumentos):
             (improc if res == "improcedente" else proc).append(num)
 
     # Argumentos com prevalência absoluta (sempre procedente)
+    # Adicionar explicitamente à lista proc para exibição
+    if "6" in argumentos and "6" not in proc:
+        proc.append("6")
+    if "9" in argumentos and "9" not in proc:
+        proc.append("9")
+    if "13" in argumentos and "13" not in proc:
+        proc.append("13")
+
     if "6" in argumentos or "9" in argumentos or "13" in argumentos:
         saida1 = "procedente"
     else:
