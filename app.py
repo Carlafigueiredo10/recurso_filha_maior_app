@@ -1067,6 +1067,23 @@ div[data-testid="column"] button[kind="secondary"] {
         font-size: 12px !important;
     }
 }
+
+/* ====== RADIO BUTTONS ====== */
+.stRadio > label {
+    color: #1f2937 !important;
+}
+
+.stRadio div[role="radiogroup"] label {
+    color: #1f2937 !important;
+}
+
+.stRadio div[role="radiogroup"] label span {
+    color: #1f2937 !important;
+}
+
+.stRadio div[role="radiogroup"] p {
+    color: #1f2937 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
