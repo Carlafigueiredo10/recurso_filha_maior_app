@@ -1508,6 +1508,48 @@ if extrato_file and defesa_file:
         if "4" not in argumentos:
             argumentos.append("4")  # Argumento 4 = "Endereço distinto"
 
+    # 🔹 REGRA DE DETECÇÃO CRÍTICA — Argumento 6 (Decisão judicial transitada em julgado)
+    # Verifica DIRETAMENTE no texto se há decisão judicial DO CASO CONCRETO, independente do GPT
+    # Esta é uma regra crítica que SEMPRE deve ser detectada (prevalência absoluta = procedente)
+    texto_limpo_judicial = texto_defesa.lower()
+
+    # Padrões que indicam decisão judicial DO CASO ESPECÍFICO da interessada
+    mencoes_decisao_judicial = [
+        r'(sentença|decisão|acórdão)\s+(favorável|transitad[oa]|judicial).*(interessada|requerente|pensionista|caso\s+concreto)',
+        r'(trânsito|transitad[oa])\s+em\s+julgado.*(interessada|requerente|pensionista|favorável)',
+        r'processo\s+(n[º°]|número|judicial)?\s*\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',
+        r'autos\s+(n[º°]|número)?\s*\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',
+        r'(sentença|decisão|acórdão)\s+proferid[oa]\s+nos\s+autos',
+        r'decisão\s+judicial\s+(do\s+caso|favorável|que\s+garante|que\s+assegura)',
+    ]
+
+    tem_decisao_judicial = any(re.search(p, texto_limpo_judicial) for p in mencoes_decisao_judicial)
+
+    if tem_decisao_judicial and "6" not in argumentos:
+        argumentos.append("6")  # Força inclusão do Arg 6
+
+    # 🔹 REGRA DE DETECÇÃO CRÍTICA — Argumento 9 (Processo administrativo anterior)
+    # Verifica DIRETAMENTE no texto se há menção a processo administrativo JÁ JULGADO, independente do GPT
+    # Esta é uma regra crítica que SEMPRE deve ser detectada (prevalência absoluta = procedente)
+    texto_limpo_admin = texto_defesa.lower()
+
+    # Padrões que indicam processo administrativo anterior
+    mencoes_processo_admin = [
+        r'(nup|processo\s+administrativo)\s*(n[º°]|número)?\s*\d{5,}',
+        r'(nota\s+técnica|decisão\s+administrativa)\s+anterior',
+        r'já\s+(foi|havia\s+sido)\s+(analisad[oa]|avaliad[oa]|auditad[oa]|julgad[oa])',
+        r'processo\s+administrativo\s+anterior',
+        r'(pad|sindicância)\s+(anterior|já\s+analisad[oa])',
+        r'matéria\s+já\s+(analisada|apreciada|julgada)',
+        r'(caso|indício)\s+já\s+(foi|havia)\s+(analisad[oa]|avaliad[oa])',
+        r'decisão\s+administrativa\s+(prévia|anterior|favorável)',
+    ]
+
+    tem_processo_admin = any(re.search(p, texto_limpo_admin) for p in mencoes_processo_admin)
+
+    if tem_processo_admin and "9" not in argumentos:
+        argumentos.append("9")  # Força inclusão do Arg 9
+
     # 🔹 REGRA DE DETECÇÃO CRÍTICA — Argumento 13 (MS 34.677/STF)
     # Verifica DIRETAMENTE no texto se há menção ao MS 34677, independente do GPT
     # Esta é uma regra crítica que SEMPRE deve ser detectada (prevalência absoluta = procedente)
